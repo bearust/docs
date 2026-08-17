@@ -1,0 +1,26 @@
+---
+sidebar_position: 1
+---
+
+# What is BeaRust?
+
+BeaRust is a configuration-driven reverse proxy and load balancer for routing application traffic to healthy backend services. Its Rust data plane serves HTTP traffic, applies host and path routing, selects upstream backends, and supports graceful reloads. The bundled Axum control plane and management UI provide an authenticated place to manage operational state.
+
+## Core capabilities
+
+- Host and path-prefix routing to named upstream pools.
+- Round-robin and least-connections balancing, with TCP or HTTP backend health checks.
+- WebSocket passthrough, JSON logs, graceful shutdown, native TLS, and atomic `SIGHUP` reloads.
+- Authenticated certificate and ACME management, plus a browser-based management UI on the control-plane listener.
+
+BeaRust also contains security controls, analytics, clustering, WASM plugins, an AI advisor, and HTTP/3 support. Those are not all active in a default deployment: enable only the systems you need and review their status first. The [architecture overview](./architecture) explains where these components run; [feature status](./feature-status) distinguishes the default path from optional and experimental capabilities.
+
+## A practical deployment model
+
+Expose the data plane to application clients on port `8080`. Keep the management UI and control API on its default loopback-only port `8081`, or put it behind a separately managed HTTPS access layer. A typical workflow is:
+
+1. [Install BeaRust](../getting-started/installation) with Docker Compose.
+2. [Create the first administrator](../getting-started/first-time-setup).
+3. [Define an upstream pool and route](../getting-started/first-proxy).
+
+BeaRust does not turn optional providers or external services on merely by being installed. That keeps a small, local configuration-driven proxy as the default operating mode.

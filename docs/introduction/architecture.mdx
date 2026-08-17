@@ -1,0 +1,33 @@
+---
+sidebar_position: 2
+---
+
+# Architecture
+
+BeaRust separates request handling from operational management while keeping both processes driven by the same validated configuration and persistent control-plane state.
+
+## Data plane
+
+The Rust data plane uses Pingora for the HTTP/1.1 and HTTP/2 proxy listener. It receives client traffic, resolves the request host and path to a route, selects a healthy backend from the route's upstream pool, and forwards the request. TCP and HTTP health checks keep unhealthy backends out of selection; when no backend is healthy, the proxy returns `503`.
+
+The primary listener is port `8080` in the Docker Compose deployment. Native TLS is optional. HTTP/3 is also optional: it uses a separate QUIC listener and requires TLS, so it is not part of the default listener configuration.
+
+## Control plane and UI
+
+The Axum control plane exposes authenticated setup and management APIs, and the bundled UI uses those APIs. In the supplied Compose files, port `8081` is published on `127.0.0.1` only. This is deliberate: do not publish the management port broadly without a separate access and TLS design.
+
+Persistent control-plane data defaults to SQLite in the `bearust-data` Docker volume. Certificate material is stored in the separate `bearust-tls` volume. The control plane can use an opt-in PostgreSQL or MySQL Compose profile instead of SQLite.
+
+## Optional subsystems
+
+Security controls (WAF, IP rules, bot protection, and rate limiting), analytics, clustering, WASM plugins, and the AI advisor are separate subsystems around the core request path. They are configuration- or environment-driven; the AI advisor, for example, stays disabled without both provider URL and API key. Review [Feature status](./feature-status) before enabling these capabilities in production.
+
+## Reloading configuration
+
+Validate a configuration before use, replace the mounted TOML atomically, and send `SIGHUP` to reload the running service. The Compose equivalent is:
+
+```sh
+docker compose kill -s HUP bearust
+```
+
+See [Configure your first proxy](../getting-started/first-proxy) for the configuration structures this reload applies.

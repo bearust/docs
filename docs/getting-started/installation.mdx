@@ -1,0 +1,57 @@
+---
+sidebar_position: 1
+---
+
+# Install BeaRust
+
+These steps start the production-oriented Docker Compose deployment from a BeaRust source checkout. They keep persistent state in Docker named volumes instead of host directories.
+
+## Start the default deployment
+
+Copy the example environment file so local choices and secrets remain outside version control, then build and start the stack:
+
+```sh
+cp .env.example .env
+docker compose up -d --build
+```
+
+The proxy data plane listens on port `8080`. The control API and bundled UI listen on port `8081`, but Compose publishes that port only to `127.0.0.1:8081`. Do not expose `8081` publicly by changing the port mapping without putting the management surface behind an appropriate HTTPS and access control design.
+
+Docker creates the `bearust-data` named volume for SQLite-backed control-plane state and the `bearust-tls` named volume for certificate files. Keep both when restarting or upgrading the default deployment.
+
+## Bootstrap token
+
+On the first SQLite-backed start, BeaRust generates a one-time setup token and writes it to the persistent data area with owner-only permissions. On a trusted host, retrieve it from the running container without copying it into tickets, chat, or shell history:
+
+```sh
+docker compose exec bearust cat /data/setup-token
+```
+
+The startup log records that a token file was generated, but does not print the token value. To set a deterministic bootstrap token instead, add a long random value to the untracked `.env` file:
+
+```dotenv
+BEARUST_SETUP_TOKEN=replace-with-a-long-random-value
+```
+
+Then use that value only for [first-time setup](./first-time-setup). The token does not replace ordinary administrator authentication after initialization.
+
+## Use one external database profile (PostgreSQL)
+
+The default stack uses SQLite. To select PostgreSQL instead, uncomment the PostgreSQL lines in `.env`, replace the development password with a secret value, and run exactly this profile:
+
+```sh
+docker compose --profile postgres up -d --build
+```
+
+Use a credential-shaped placeholder in documentation and automation, never a real password:
+
+```dotenv
+DATABASE_URL=postgres://bearust:<postgres-password>@postgres:5432/bearust
+POSTGRES_USER=bearust
+POSTGRES_PASSWORD=<postgres-password>
+POSTGRES_DB=bearust
+```
+
+Compose waits for the selected database health check and BeaRust runs migrations at startup. Switching from SQLite to PostgreSQL is not an in-place change: perform and test an explicit export/import, retain the old `bearust-data` volume as a rollback copy, and **do not delete it** until the new deployment is verified.
+
+Next, [initialize the first administrator](./first-time-setup).

@@ -22,7 +22,7 @@ export default function Home(): ReactNode {
                 dependable edge for application traffic.
               </p>
               <div className={styles.primaryActions}>
-                <Link className="button button--primary button--lg" to="/docs/intro">
+                <Link className="button button--primary button--lg" to="/docs/introduction/what-is-bearust">
                   Read the introduction
                 </Link>
                 <a className="button button--outline button--lg" href="https://github.com/rizalord/bearust">
@@ -38,12 +38,12 @@ export default function Home(): ReactNode {
             <p>Choose a focused path, then follow the reference when you need the details.</p>
           </div>
           <div className={styles.pathGrid}>
-            <Link className={styles.pathCard} to="/docs/intro">
+            <Link className={styles.pathCard} to="/docs/getting-started/installation">
               <span className={styles.cardLabel}>Deploy</span>
               <Heading as="h3">Install BeaRust</Heading>
               <p>Bring up the production-ready Docker Compose stack and verify its health.</p>
             </Link>
-            <Link className={styles.pathCard} to="/docs/intro">
+            <Link className={styles.pathCard} to="/docs/getting-started/first-proxy">
               <span className={styles.cardLabel}>Route traffic</span>
               <Heading as="h3">Configure a first proxy</Heading>
               <p>Connect a host and upstream, then validate the request path end to end.</p>

@@ -2,46 +2,17 @@
 sidebar_position: 1
 ---
 
-# Tutorial Intro
+# BeaRust documentation
 
-Let's discover **Docusaurus in less than 5 minutes**.
+BeaRust is a configuration-driven reverse proxy and load balancer. It puts a Rust data plane in front of application backends and pairs it with an Axum control plane and bundled management UI for operating proxy configuration.
 
-## Getting Started
+Start with [What is BeaRust?](./introduction/what-is-bearust), then follow the [production installation](./getting-started/installation) and [first proxy](./getting-started/first-proxy) guides. For a high-level view of the components, see [Architecture](./introduction/architecture); for what is optional, disabled by default, or still maturing, see [Feature status](./introduction/feature-status).
 
-Get started by **creating a new site**.
+## Choose a path
 
-Or **try Docusaurus immediately** with **[docusaurus.new](https://docusaurus.new)**.
+- **Deploy BeaRust:** [Install with Docker Compose](./getting-started/installation), then complete [first-time setup](./getting-started/first-time-setup).
+- **Route traffic:** Configure a [first proxy](./getting-started/first-proxy) from the checked-in TOML example.
+- **Develop locally:** Start the [development stack](./getting-started/development-stack) with the Rust backend and Vite frontend.
+- **Recover from a common issue:** Use [troubleshooting](./getting-started/troubleshooting) for diagnostics and expected observations.
 
-### What you'll need
-
-- [Node.js](https://nodejs.org/en/download/) version 20.0 or above:
-  - When installing Node.js, you are recommended to check all checkboxes related to dependencies.
-
-## Generate a new site
-
-Generate a new Docusaurus site using the **classic template**.
-
-The classic template will automatically be added to your project after you run the command:
-
-```bash
-npm init docusaurus@latest my-website classic
-```
-
-You can type this command into Command Prompt, Powershell, Terminal, or any other integrated terminal of your code editor.
-
-The command also installs all necessary dependencies you need to run Docusaurus.
-
-## Start your site
-
-Run the development server:
-
-```bash
-cd my-website
-npm run start
-```
-
-The `cd` command changes the directory you're working with. In order to work with your newly created Docusaurus site, you'll need to navigate the terminal there.
-
-The `npm run start` command builds your website locally and serves it through a development server, ready for you to view at http://localhost:3000/.
-
-Open `docs/intro.md` (this page) and edit some lines: the site **reloads automatically** and displays your changes.
+All public guidance is English-first. Keep credentials, private keys, and production URLs out of documentation examples and support requests.
