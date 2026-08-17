@@ -65,3 +65,22 @@ Documentation claims were verified against source commit `rizalord/bearust@c8ed1
 
 - No documentation-specific validator exists until Task 9, so source pointer verification was performed with an explicit local target check instead.
 - The source checkout contains an unrelated untracked `.impeccable/` directory. It was only observed during read-only source inspection and was not modified.
+
+## Fix round 1
+
+### Changes
+
+- `docs/contributing/plugin-sdk-and-authoring.mdx:16` — replaced the incorrect "there is no remote registry/download" claim. The paragraph now states that the runtime loader loads only local reviewed directories, while the CLI ships a client for a static HTTPS-hosted registry index (`src/plugin_registry.rs`) with `bearust plugin search`/`bearust plugin install` (`src/cli.rs`) that fetch the index, download a tarball, verify its SHA-256 checksum and embedded signature against the index entry, and extract it into the plugins directory. It notes the index is a catalog/transport-integrity check only (never a source of trust), that no community/operator-hosted registry exists yet (matching `docs/PLUGIN_AUTHORING.md:684`), and that the default index URL can be overridden with `--registry-url` or `BEARUST_PLUGIN_REGISTRY_URL`. Verified against `src/plugin_registry.rs` (fetch/search/find, `download_and_verify`, `extract_tarball`, `verify_signer`), `src/cli.rs:71-88` (Search/Install subcommands), `src/cli.rs:966-979` (default registry URL resolution), and `src/cli.rs:1023+` (`plugin_install`).
+- `docs/contributing/control-plane-and-database.mdx:13` — rephrased "PostgreSQL/PostgreSQL alias" to "PostgreSQL (via the `postgres`/`postgresql` scheme aliases)". Verified against `src/control_plane/repository.rs:202-220` (`validate_database_url` accepts `sqlite`, `postgres`, `postgresql`, `mysql`).
+
+### Verification
+
+Executed in `/home/rizalord/Projects/personal/bearust-docs/.worktrees/bearust-docs-site`:
+
+```text
+npm run typecheck  # passed: tsc exited 0
+npm run build      # passed: [SUCCESS] Generated static files in "build" (pre-existing experimental localStorage warning only)
+git diff --check   # passed: no whitespace errors
+```
+
+`git status` shows only the two intended modified files; the BeaRust source repository was inspected read-only and remains untouched (its pre-existing untracked `.impeccable/` directory was not modified).
