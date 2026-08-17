@@ -1,0 +1,34 @@
+{
+  "version.label": {
+    "message": "0.0.1(未リリース)",
+    "description": "The label for version 0.0.1"
+  },
+  "sidebar.docsSidebar.category.Introduction": {
+    "message": "はじめに",
+    "description": "The label for category 'Introduction' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Get started": {
+    "message": "スタートガイド",
+    "description": "The label for category 'Get started' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Operate BeaRust": {
+    "message": "BeaRust の運用",
+    "description": "The label for category 'Operate BeaRust' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Reference": {
+    "message": "リファレンス",
+    "description": "The label for category 'Reference' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Configuration": {
+    "message": "設定",
+    "description": "The label for category 'Configuration' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Control-plane API": {
+    "message": "コントロールプレーン API",
+    "description": "The label for category 'Control-plane API' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Contributing": {
+    "message": "コントリビューション",
+    "description": "The label for category 'Contributing' in sidebar 'docsSidebar'"
+  }
+}

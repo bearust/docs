@@ -1,0 +1,20 @@
+---
+sidebar_position: 8
+---
+
+# Add a backend feature
+
+Use this sequence to keep the control plane, persistent state, and data plane coherent.
+
+1. **Identify ownership.** Start in the narrow owning module under [`src/`](https://github.com/rizalord/bearust/tree/c8ed147cd84efc71bda8b8473486906b5616a505/src): config/runtime, proxy, control plane/repository, policy store, or cluster command gateway.
+2. **Model/configure the feature.** Add typed configuration in `src/config/` and/or control-plane models. Extend `Config::validate` for configuration invariants.
+3. **Add a migration for durable state.** Create the next ordered SQL migration in `migrations/`; implement access through `control_plane/repository.rs`. Do not rely on SQLite-specific behavior if PostgreSQL/MySQL must support it.
+4. **Implement behavior at each boundary.** Add repository and authenticated API behavior, audit/realtime effects, and runtime synchronization. If traffic behavior changes, publish an immutable runtime or policy-store snapshot before requests observe it.
+5. **Use the cluster gateway where required.** Replicated configuration mutations must become typed `ConfigCommand`s; do not bypass the gateway with direct repository mutation when membership is active. Preserve a command ID for unknown outcomes.
+6. **Add focused tests.** Cover validation, repository/API authorization, runtime reload/materialization, and data-plane behavior as applicable. Run the focused test and observe it before moving on.
+7. **Update the frontend if exposed.** Add typed methods in `frontend/src/api.ts`, a React Query-backed feature route/component, UI tests, locale keys in all catalogs, and E2E coverage where browser interaction matters.
+8. **Update operator and contributor docs.** Point to the owning source files and tests, record the verified source commit, and document permissions, failure mode, and configuration.
+9. **Run the focused and CI-equivalent checks.** Use [Testing and CI](./testing-and-ci) for the full command list, plus `git diff --check`.
+
+Do not write a TOML file as the only persistence path: `RuntimeConfigReloader` treats the database as authoritative because a mounted configuration file can be read-only. Conversely, do not leave a durable policy invisible to the live request-time store.
+

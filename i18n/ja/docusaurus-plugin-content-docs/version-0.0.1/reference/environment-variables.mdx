@@ -1,0 +1,69 @@
+---
+sidebar_position: 3
+---
+
+# Environment variables
+
+Environment variables configure Compose and selected runtime integrations.
+Never put a usable password, API key, session, or cluster token in source
+control, examples, logs, or support diagnostics. Redact credentials embedded
+in database URLs before sharing output.
+
+## Compose and logging
+
+| Variable | Default / use |
+| --- | --- |
+| `BEARUST_PORT` | Host port for proxy service; `8080`. |
+| `BEARUST_CONTROL_PORT` | Host loopback publication for control service; `8081`. |
+| `BEARUST_IMAGE` | Production Compose image; `bearust:local`. |
+| `BEARUST_DEV_IMAGE` | Development Compose image; `bearust:dev`. |
+| `BEARUST_CONFIG` | TOML mounted into the container; `./config/bearust.example.toml`. |
+| `BEARUST_FRONTEND_PORT` | Development frontend host port; `5183`. |
+| `RUST_LOG` | Tracing filter; `info` in production Compose, `debug` in development Compose. |
+| `BEARUST_PLUGIN_REGISTRY_URL` | Optional CLI plugin-registry index override. |
+
+Production Compose runs `bearust serve --config /etc/bearust/bearust.toml --json-logs`.
+It maps the control port only to `127.0.0.1` on the host.
+
+## Setup and database
+
+| Variable | Use |
+| --- | --- |
+| `BEARUST_SETUP_TOKEN` | Optional first-start setup token. If absent, BeaRust generates one and, for a file-backed SQLite database, writes a `setup-token` file beside it with Unix mode `0600`. |
+| `DATABASE_URL` | Selects the control-plane database. Empty/unset uses `server.control_database`; Compose defaults to `sqlite:///data/bearust.sqlite`. SQLite, PostgreSQL, and MySQL URLs are supported by the Compose setup. |
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | PostgreSQL profile provisioning values. |
+| `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_ROOT_PASSWORD` | MySQL profile provisioning values. |
+
+Use the `postgres` or `mysql` Compose profile only with the corresponding
+`DATABASE_URL`. BeaRust provisions the file-backed SQLite path when needed and
+runs control-plane migrations at startup. Use non-secret placeholders such as
+`replace-with-a-development-password` in local copies; deployment credentials
+belong in a secret mechanism.
+
+## AI provider
+
+The advisor is disabled unless both `LLM_API_URL` and `LLM_API_KEY` are set.
+
+| Variable | Default / bounds |
+| --- | --- |
+| `LLM_API_URL` | Required with the API key when enabling the provider. |
+| `LLM_API_KEY` | Required; treat as a secret. |
+| `LLM_MODEL` | `gpt-4o-mini`. |
+| `LLM_REQUEST_TIMEOUT_SECONDS` | `30`; `1`–`300`. |
+| `LLM_RESPONSE_LIMIT_BYTES` | `2097152`; `1024`–`8388608`. |
+| `LLM_QUEUE_CAPACITY` | `32`; `1`–`1024`. |
+| `LLM_WORKER_COUNT` | `2`; `1`–`16`. |
+| `LLM_CIRCUIT_FAILURE_THRESHOLD` | `3`; `1`–`10`. |
+| `BEARUST_AI_REPORT_INTERVAL_HOURS` | `24`; accepted range `1`–`168` when the advisor is enabled. |
+
+## Cluster
+
+| Variable | Use |
+| --- | --- |
+| `NODE_ID` | Overrides `cluster.node_id` when non-empty. |
+| `CLUSTER_PEERS` | Overrides peers using comma-separated `node_id=host:port` entries. |
+| `CLUSTER_AUTH_TOKEN` | Overrides `cluster.auth_token`; with peers it must contain 32–256 bytes. |
+
+These three values override TOML. Keep `CLUSTER_AUTH_TOKEN` out of diagnostics
+and use a placeholder such as `replace-with-a-secret-from-your-secret-manager`
+in deployment templates.

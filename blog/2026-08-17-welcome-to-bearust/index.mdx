@@ -1,0 +1,45 @@
+---
+slug: welcome-to-bearust
+title: Welcome to BeaRust
+authors: [rizalord]
+tags: [announcement]
+---
+
+BeaRust is now open source: a reverse proxy, load balancer, and Web Application Firewall built in Rust,
+installable with a single Docker Compose command.
+
+{/* truncate */}
+
+## Why another reverse proxy?
+
+Getting a full reverse proxy, load balancer, WAF, and management UI usually means one of two paths: stitch
+together Nginx or HAProxy with a separate WAF and a separate GUI tool, each with its own configuration
+format — or pay for commercial tooling like F5 or Nginx Plus. Neither is a great fit for a small team or an
+individual running a homelab.
+
+BeaRust's goal is straightforward: install as easily as Nginx Proxy Manager, but don't stop at "easy." Under
+the same single-command install is a real load balancer with multiple algorithms, a built-in WAF, IP and bot
+security, rate limiting, traffic analytics, and free multi-node clustering — all in the open-source edition,
+with nothing locked behind a paid tier.
+
+## What's in this first release
+
+- A Rust data plane (Pingora-based) for HTTP/1.1 and HTTP/2 proxying, with host/path routing and five load
+  balancing algorithms.
+- An authenticated control plane and bundled browser UI for managing everything without hand-editing config
+  files mid-incident.
+- WAF, IP security, bot protection, and rate limiting — all configuration-driven and off until you turn them
+  on.
+- Analytics with anomaly detection, Raft-based multi-node clustering, a sandboxed WASM plugin system, and an
+  optional AI advisor.
+
+See [what BeaRust actually is](/docs/introduction/what-is-bearust) for the full picture, or jump straight to
+[installing it](/docs/getting-started/installation) — no source checkout required, just the published
+`rizalord/bearust` Docker image.
+
+## What's next
+
+This documentation site and the BeaRust source are both public now. Indonesian and Japanese localization is
+rolling out page by page — start with the introduction and getting-started guides, with more to follow.
+Bug reports, questions, and contributions are welcome on [GitHub Discussions](https://github.com/rizalord/bearust/discussions)
+and [GitHub Issues](https://github.com/rizalord/bearust/issues).

@@ -1,0 +1,44 @@
+---
+sidebar_position: 11
+---
+
+# Documentation workflow
+
+Treat source as the authority and publish only claims verified against a source commit. These guides were checked against [`rizalord/bearust@c8ed147`](https://github.com/rizalord/bearust/tree/c8ed147cd84efc71bda8b8473486906b5616a505). When changing a behavior, start at its owning file and closest test, verify the current commit, and update the matching operator/reference/contributor page in the same change.
+
+## Verification boundary
+
+The complete public docs corpus (API reference, configuration/CLI reference,
+operate guides, and contributor pages) was last audited end-to-end against
+`rizalord/bearust` commit [`c8ed147`](https://github.com/rizalord/bearust/tree/c8ed147cd84efc71bda8b8473486906b5616a505)
+(full SHA `c8ed147cd84efc71bda8b8473486906b5616a505`) on 2026-08-17. Do not
+describe behavior from a later `bearust` commit as already implemented; add
+any such change to [the roadmap](../roadmap.mdx) instead until the docs are
+re-audited against the newer commit.
+
+## Write maintainable pages
+
+- Use English-first, locale-neutral document IDs and headings; keep a translated docs locale inactive until its content is complete.
+- State the owning source module and test near runtime, API, config, or security claims. Prefer immutable commit links for a reviewed release/documentation boundary.
+- Keep the distinction between implemented behavior and planned work explicit. Do not infer network, security, cluster, or failure semantics from generic conventions.
+- Include prerequisites, exact commands, observable verification, and failure or rollback behavior for operational procedures. Do not put secrets in examples.
+- Update sidebar entries when adding a public page; keep internal planning material excluded from the published docs corpus.
+
+For a source-aligned change, inspect `DEVELOPMENT.md`, `Cargo.toml`/`rust-toolchain.toml`, `frontend/package.json`, CI, and the owning implementation/tests as relevant. Check Compose ports and scripts against their actual YAML/shell files rather than copying a command from another page.
+
+Before submitting documentation changes, run the docs-site checks:
+
+```sh
+npm run typecheck
+npm run validate:docs
+npm run build
+git diff --check
+```
+
+`npm run validate:docs` checks the public `docs/` corpus for starter content,
+unfinished-content markers, required pages, and route coverage against the
+sibling BeaRust source repository's control-plane router. Set
+`BEARUST_SOURCE_DIR` if that repository is not a sibling of this checkout
+(for example, when running from a nested worktree). Then review links, source
+pointers, locale claims, commands, and any changed sidebar IDs.
+

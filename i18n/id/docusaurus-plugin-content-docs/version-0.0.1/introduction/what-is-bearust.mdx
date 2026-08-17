@@ -1,0 +1,53 @@
+---
+sidebar_position: 1
+---
+
+# Apa itu BeaRust?
+
+BeaRust adalah reverse proxy, load balancer, dan Web Application Firewall (WAF) open-source, dibangun
+dengan Rust dan dikemas sebagai satu stack Docker Compose.
+
+Singkatnya: instal dengan satu perintah Docker Compose, kelola dari UI berbasis browser, dan tidak
+perlu mengutak-atik file konfigurasi untuk perubahan rutin. Di balik kemudahan instalasi itu ada load
+balancer sungguhan dengan berbagai algoritma, WAF bawaan, keamanan IP dan bot, rate limiting, analitik
+trafik, dan clustering multi-node gratis. Data plane BeaRust yang berbasis Rust ada karena alasan yang sama
+orang memilih Rust untuk software semacam ini: performa yang dapat diprediksi dan keamanan memori, tanpa
+garbage collector di jalur request.
+
+## Apa yang sebenarnya berjalan
+
+BeaRust berjalan sebagai satu proses dengan dua listener. Data plane berbasis Rust (dibangun di atas
+Pingora) melayani trafik HTTP/1.1 dan HTTP/2: mencocokkan host dan path request ke sebuah route, memilih
+backend sehat dari upstream pool route tersebut, lalu meneruskan request. Control plane Axum mengekspos API
+manajemen yang terautentikasi, dan UI browser bawaan adalah klien dari API yang sama — tidak ada backend
+terpisah yang perlu dijalankan.
+
+- **Routing:** pencocokan host dan path-prefix ke upstream pool bernama.
+- **Load balancing:** round-robin, least-connections, weighted, IP-hash, atau adaptive-weight (berdasarkan
+  waktu respons yang teramati) — atau algoritma plugin kustom.
+- **Health check:** TCP atau HTTP, per backend.
+- **Dukungan protokol:** WebSocket passthrough, TLS native, HTTP/3 opsional, log JSON, graceful shutdown,
+  reload konfigurasi atomik via `SIGHUP`.
+- **Sertifikat:** upload terautentikasi, atau ACME otomatis (Let's Encrypt HTTP-01, Cloudflare DNS-01).
+
+## Apa yang opsional, dan mengapa itu penting
+
+Kontrol keamanan (WAF, aturan IP, proteksi bot, rate limiting), analitik, clustering multi-node, plugin
+WASM, dan AI advisor semuanya nyata, tapi tidak ada yang otomatis aktif hanya karena BeaRust berjalan.
+Masing-masing digerakkan oleh konfigurasi atau environment variable — AI advisor misalnya tetap nonaktif
+sampai Anda menyediakan URL provider dan API key. Ini disengaja: deployment baru sebaiknya dimulai sebagai
+proxy kecil yang dapat diprediksi, dan Anda yang menentukan kapan menambah kedalaman fiturnya. Lihat
+[status fitur](./feature-status) untuk mengetahui apa yang aktif secara default versus opsional,
+[arsitektur](./architecture) untuk mengetahui di mana setiap subsistem berjalan, dan
+[roadmap](../roadmap) untuk apa yang direncanakan tapi belum tersedia.
+
+## Mulai
+
+1. [Instal BeaRust](../getting-started/installation) — bagian quick-start tidak memerlukan checkout source,
+   cukup image Docker yang sudah dipublikasikan.
+2. [Buat administrator pertama](../getting-started/first-time-setup).
+3. [Definisikan upstream pool dan route](../getting-started/first-proxy).
+
+Secara default, data plane mendengarkan di `8080` untuk trafik aplikasi, dan API kontrol serta UI
+mendengarkan di `8081`, dipublikasikan hanya ke `127.0.0.1` sampai Anda sengaja menempatkannya di balik
+access layer Anda sendiri.

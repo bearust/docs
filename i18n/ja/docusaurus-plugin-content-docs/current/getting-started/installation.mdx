@@ -1,0 +1,178 @@
+---
+sidebar_position: 1
+---
+
+# BeaRust をインストールする
+
+BeaRust は `rizalord/bearust` という単一の Docker イメージとして Docker Hub に公開されています。実行す
+るためにソースリポジトリをクローンする必要はありません — このページのクイックスタートでは、自分でファイル
+を2つ作成するだけで、公開済みイメージからスタックを起動します。もう一方のセクションでは、コントリビュー
+ターやイメージをローカルでビルドしたい人向けに、ソースチェックアウトからのビルド方法を扱います。
+
+## 前提条件
+
+- `docker compose` として利用できる Docker Compose プラグイン付きの Docker Engine。
+- 自分で作成する2つのファイル: `docker-compose.yml` とルート設定ファイル。それ以外は不要です。
+
+## クイックスタート(クローン不要)
+
+### 1. 作業ディレクトリを作成する
+
+```sh
+mkdir bearust && cd bearust
+```
+
+### 2. `docker-compose.yml` を書く
+
+これは本番向けのスタックです: データプレーンは `8080`、コントロール API と UI は `127.0.0.1:8081` のみ、
+永続状態は Docker の named volume に、コンテナは read-only かつ非 root で動作します。
+
+```yaml title="docker-compose.yml"
+services:
+  bearust:
+    image: rizalord/bearust:latest
+    command: ["serve", "--config", "/etc/bearust/bearust.toml", "--json-logs"]
+    ports:
+      - "8080:8080"
+      - "127.0.0.1:8081:8081"
+    volumes:
+      - "./bearust.toml:/etc/bearust/bearust.toml:ro"
+      - bearust-data:/data
+      - bearust-tls:/etc/bearust/tls
+    environment:
+      RUST_LOG: "info"
+      # 初回起動時に自動生成されるワンタイムセットアップトークンを避けたい
+      # 場合はここで一度だけ設定します。長くランダムな値を使い、バージョン
+      # 管理や共有ドキュメントに実際の値を絶対に含めないでください。
+      BEARUST_SETUP_TOKEN: ""
+    working_dir: /run/bearust
+    healthcheck:
+      test: ["CMD-SHELL", "test -s /run/bearust/bearust.pid && nc -z 127.0.0.1 8080 && nc -z 127.0.0.1 8081"]
+      interval: 5s
+      timeout: 3s
+      start_period: 10s
+      retries: 20
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777
+      - /run/bearust:uid=10001,gid=10001,mode=0755
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+
+volumes:
+  bearust-data:
+  bearust-tls:
+```
+
+### 3. 最小構成の `bearust.toml` を書く
+
+これはまだルートが1つも設定されていない状態で BeaRust を起動します — 起動、セットアップ API への到達、
+ヘルスの確認には十分です。転送先のバックエンドができたら、アップストリームプールとルートを追加してくだ
+さい([最初のプロキシを設定する](./first-proxy) を参照)。
+
+```toml title="bearust.toml"
+[server]
+bind = "0.0.0.0:8080"
+control_bind = "0.0.0.0:8081"
+control_database = "/data/bearust.sqlite"
+pid_file = "/run/bearust/bearust.pid"
+certificate_store = "/data/certificates"
+
+[health]
+```
+
+### 4. スタックを起動する
+
+```sh
+docker compose up -d
+```
+
+### 5. デプロイを検証する
+
+```sh
+docker compose ps
+curl --fail http://127.0.0.1:8081/api/setup/status
+```
+
+`bearust` サービスが `running (healthy)` と表示され、curl コマンドが新規デプロイでは
+`{"initialized":false}`(セットアップ後は `true`)を返すことを確認してください。このヘルシー状態には、
+PID ファイルとコンテナの `8080`(データプレーン)・`8081`(コントロールプレーン)両リスナーに対する
+Compose のチェックが含まれます。
+
+最初の管理者を作成するには [初回セットアップ](./first-time-setup) に進んでください。
+
+## セットアップトークン
+
+SQLite バックエンドでの初回起動時、BeaRust はワンタイムのセットアップトークンを生成し、所有者のみが読め
+る権限で永続データ領域に書き込みます。信頼できるホスト上で、チケットやチャット、シェル履歴にコピーせず
+に、実行中のコンテナから取得してください:
+
+```sh
+docker compose exec bearust cat /data/setup-token
+```
+
+起動ログにはトークンファイルが生成された記録は残りますが、トークンの値自体は出力されません。決定的な
+ブートストラップトークンを設定したい場合は、`docker-compose.yml` の `BEARUST_SETUP_TOKEN` 環境変数に長い
+ランダム値を追加するか、Compose ファイルの隣に置く `.env` ファイルに移してください:
+
+```dotenv title=".env"
+BEARUST_SETUP_TOKEN=長くランダムな値に置き換えてください
+```
+
+その値は [初回セットアップ](./first-time-setup) にのみ使用してください。トークンは初期化後の通常の管理
+者認証を代替するものではありません。
+
+## 外部データベースを使用する(PostgreSQL または MySQL)
+
+デフォルトのスタックは SQLite を使用します。代わりに PostgreSQL や MySQL を使用するには、対応するサービ
+スを `docker-compose.yml` に追加し、`DATABASE_URL` をそこに向けます:
+
+```yaml title="docker-compose.yml(抜粋 — services: の下に追加)"
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: bearust
+      POSTGRES_PASSWORD: "<postgresのパスワード>"
+      POSTGRES_DB: bearust
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+```
+
+`volumes:` の下に `postgres-data:` を追加し、`bearust` サービスに `DATABASE_URL` 環境変数エントリを追加
+し、`bearust` が `postgres` のヘルスチェックに依存するようにします:
+
+```dotenv title=".env"
+DATABASE_URL=postgres://bearust:<postgresのパスワード>@postgres:5432/bearust
+```
+
+ドキュメントや自動化には実際のパスワードではなく、資格情報の形をしたプレースホルダーを使用してくださ
+い。Compose は選択したデータベースのヘルスチェックを待ち、BeaRust は起動時にマイグレーションを実行しま
+す。SQLite から PostgreSQL への切り替えはインプレースの変更ではありません: 明示的なエクスポート/インポ
+ートを実施・検証し、古い `bearust-data` ボリュームをロールバック用のコピーとして**新しいデプロイが検証
+されるまで削除しないでください**。
+
+## ソースチェックアウトからビルドする
+
+BeaRust に貢献している場合や、`rizalord/bearust` を pull する代わりに自分でイメージをビルドしたい場合
+は、ソースリポジトリをクローンし、ローカルビルドや追加プロファイルに対応した同梱の Compose ファイルを
+使用してください:
+
+```sh
+git clone https://github.com/rizalord/bearust.git
+cd bearust
+cp .env.example .env
+docker compose up -d --build
+```
+
+これは自分で書いたファイルではなく、チェックアウト内の `config/bearust.example.toml` を使用し、上記と
+同じ PostgreSQL/MySQL プロファイルを `docker compose --profile postgres up -d --build` でサポートしま
+す。BeaRust 自体を変更する予定がある場合は
+[コントリビューター向け開発環境セットアップ](../contributing/development-setup) を参照してください。
+
+次に、[最初の管理者を初期化](./first-time-setup) してください。

@@ -62,22 +62,6 @@ const sidebars: SidebarsConfig = {
         },
         'reference/environment-variables',
         'reference/metrics-and-errors',
-        {
-          type: 'category',
-          label: 'Control-plane API',
-          link: {type: 'doc', id: 'reference/api/api-overview'},
-          items: [
-            'reference/api/api-overview',
-            'reference/api/api-health-setup-auth',
-            'reference/api/api-proxy-hosts-and-load-balancer',
-            'reference/api/api-certificates-and-acme',
-            'reference/api/api-users-roles-and-audit',
-            'reference/api/api-security',
-            'reference/api/api-analytics-and-tuning',
-            'reference/api/api-ai-advisor',
-            'reference/api/api-cluster-and-plugins',
-          ],
-        },
       ],
     },
     {
@@ -99,6 +83,20 @@ const sidebars: SidebarsConfig = {
       ],
     },
     {type: 'category', label: 'Roadmap', link: {type: 'doc', id: 'roadmap'}, items: []},
+  ],
+  // Its own top-level sidebar so the "API" navbar item shows a dedicated,
+  // uncluttered nav (not the full docs tree) while browsing API pages —
+  // same docs instance and URLs, no separate plugin or versioning needed.
+  apiSidebar: [
+    'reference/api/api-overview',
+    'reference/api/api-health-setup-auth',
+    'reference/api/api-proxy-hosts-and-load-balancer',
+    'reference/api/api-certificates-and-acme',
+    'reference/api/api-users-roles-and-audit',
+    'reference/api/api-security',
+    'reference/api/api-analytics-and-tuning',
+    'reference/api/api-ai-advisor',
+    'reference/api/api-cluster-and-plugins',
   ],
 };
 

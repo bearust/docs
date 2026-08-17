@@ -1,0 +1,33 @@
+---
+sidebar_position: 1
+---
+
+# Dokumentasi BeaRust
+
+BeaRust adalah reverse proxy dan load balancer berbasis konfigurasi. BeaRust menempatkan data plane berbasis
+Rust di depan backend aplikasi Anda, dipadukan dengan control plane Axum dan UI manajemen bawaan untuk
+mengelola konfigurasi proxy.
+
+Mulai dari [Apa itu BeaRust?](./introduction/what-is-bearust), lalu ikuti panduan
+[instalasi produksi](./getting-started/installation) dan [proxy pertama](./getting-started/first-proxy).
+Untuk gambaran umum komponen, lihat [Arsitektur](./introduction/architecture); untuk mengetahui apa yang
+opsional, nonaktif secara default, atau masih dalam pengembangan, lihat
+[Status fitur](./introduction/feature-status).
+
+## Pilih jalur Anda
+
+- **Deploy BeaRust:** [Instal dengan Docker Compose](./getting-started/installation), lalu selesaikan
+  [pengaturan awal](./getting-started/first-time-setup).
+- **Rutekan trafik:** Konfigurasikan [proxy pertama](./getting-started/first-proxy) dari contoh TOML yang
+  sudah tersedia.
+- **Kembangkan secara lokal:** Jalankan [development stack](./getting-started/development-stack) dengan
+  backend Rust dan frontend Vite.
+- **Operasikan trafik produksi:** Kelola [proxy host dan load balancing](./operate/proxy-hosts-and-load-balancing),
+  lalu tambahkan [TLS dan sertifikat](./operate/tls-and-certificates) serta kontrol keamanan satu per satu.
+- **Atasi masalah umum:** Gunakan [troubleshooting](./getting-started/troubleshooting) untuk diagnosis dan
+  hasil yang diharapkan.
+
+Bahasa Inggris adalah sumber utama (canonical) dokumentasi ini. Terjemahan Bahasa Indonesia dan Jepang
+sedang digulirkan bertahap per halaman — halaman yang belum diterjemahkan akan tampil dalam Bahasa Inggris.
+Jangan sertakan kredensial, kunci privat, atau URL produksi dalam contoh dokumentasi maupun permintaan
+dukungan.

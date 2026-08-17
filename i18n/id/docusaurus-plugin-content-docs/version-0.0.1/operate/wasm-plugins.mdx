@@ -1,0 +1,48 @@
+---
+sidebar_position: 11
+---
+
+# WASM plugins
+
+WASM plugins are optional and disabled by default. Enable them only after deciding which plugin sources, signing keys, and capabilities you trust. BeaRust loads each plugin from an immediate child directory of the configured plugin directory; it does not recursively discover nested plugin folders.
+
+## Prepare a plugin package
+
+Each child directory needs a `plugin.toml` manifest and the `.wasm` module named by its `module` field. The manifest identifies the plugin, ABI version, declared capabilities, and `[limits]`. Start from the [plugin authoring guide](https://github.com/rizalord/bearust/blob/main/docs/PLUGIN_AUTHORING.md) for the ABI exports, capability-specific input/output contracts, and manifest validation rules.
+
+Plugin execution is sandboxed: plugins receive only host-provided data and do not receive filesystem, network, or WASI access. That sandbox does not make an unreviewed plugin safe. A capability can still affect request handling within its defined hook, so review the manifest and module as privileged operational input. The available hooks include health checks, WAF detection, request/response transforms, WAF-block notifications, and load-balancer selection; enable only the capabilities your deployment needs.
+
+Limits bound manifest and signature sizes and each invocation's memory, fuel, wall-clock time, and output. An invalid manifest, incompatible ABI, bad signature, or exceeded runtime bound produces a safe plugin status/error code rather than exposing module internals. Treat those codes as an operator signal: fix or remove the package instead of loosening limits blindly.
+
+**Verify:** place a reviewed test package directly under the configured plugin directory, reload it, and confirm its status is loaded. Put an invalid package in a disposable test directory and confirm the reported failure is a stable code such as `invalid_manifest` or `abi_mismatch`, without dumping module contents.
+
+## Operate the lifecycle
+
+Use the plugin management workflow to reload discovered packages and to enable, disable, unload, or health-check an individual plugin. Disabling prevents the plugin from participating in request processing; unloading removes it from the active runtime. Reload after changing the manifest, module, signature, or trust data, and verify the resulting status before exposing traffic to the change.
+
+**Verify:** on a non-production plugin, enable it and run its health check; then disable and unload it. Confirm status changes at each step and confirm its hook no longer affects a controlled request after disable/unload.
+
+## Sign and establish trust
+
+Generate a dedicated Ed25519 keypair and sign the exact manifest/module pair before distribution:
+
+```sh
+bearust plugin keygen --out ./plugin-signing-key
+bearust plugin sign ./plugins/example-plugin --key ./plugin-signing-key
+```
+
+Keep the private key outside the plugin directory and use a protected signing workflow. A signature proves that the manifest and module match a signing key; it does not independently establish that the key is trustworthy. Trust-on-first-use records the first accepted signing key for a plugin ID. Before that first acceptance, verify the publisher key through an independent channel. Key rotation is manual: explicitly replace the trusted key as part of a reviewed rotation, then reload and verify the new signed package. Never accept an unexpected key change as routine maintenance.
+
+**Verify:** sign a test plugin, load it once to establish the expected trust record, then alter its manifest or module and reload. The altered package must fail signature verification. Repeat with a deliberately rotated key only after updating the trusted key through the approved rotation process.
+
+## Install registry packages with an independent trust decision
+
+The registry workflow can search for and install a package and verifies the registry-provided checksum before installation:
+
+```sh
+bearust plugin install example-plugin --out ./plugins --yes
+```
+
+Checksum verification protects the downloaded bytes against the registry index value. It does not authenticate the registry, the publisher, the distribution channel, or the first signing key. Use an approved registry URL, secure its transport and access path, review publisher identity out of band, and rely on signature/trust verification before enabling a downloaded plugin.
+
+**Verify:** install a disposable package from an approved test registry, confirm checksum verification succeeds, and then confirm the package remains disabled until the operator explicitly enables it after reviewing its trust status.

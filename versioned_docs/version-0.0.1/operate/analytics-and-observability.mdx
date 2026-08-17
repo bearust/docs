@@ -1,0 +1,29 @@
+---
+sidebar_position: 8
+---
+
+# Analytics and observability
+
+Use analytics to observe traffic and security trends, not as an unbounded forensic archive. BeaRust collects request status classes, latency histograms, bandwidth, WAF blocks, bot blocks/challenges, and rate-limit events. It also records dimensions for endpoints, upstreams, attacker IPs, and attack types.
+
+## Establish a baseline before acting
+
+Analytics are retained in bounded minute buckets per proxy host. Retention is configurable within service limits, and host/bucket limits can evict older data; do not infer a retention guarantee beyond the configured bounded collection. Allow a representative traffic period to warm up the baseline before treating an anomaly as actionable.
+
+When an anomaly needs acknowledgement, record the investigation and resolution through the management workflow so later responders can distinguish an acknowledged condition from an unseen one. An acknowledgement does not stop request handling or repair the underlying service.
+
+**Verify:** generate controlled requests with a mix of successful, client-error, and server-error responses. Inspect the host summary and time series after the minute bucket advances; status, latency, and relevant security counters should increase. Confirm that a newly enabled host has no historical baseline until traffic accumulates.
+
+## Correlate logs and live events
+
+Use JSON logs for machine parsing and carry the request ID through incident investigation. BeaRust validates or generates request IDs so a client-supplied unsafe value is not blindly trusted. Realtime events notify connected management clients of relevant changes and traffic updates; they complement logs and persisted summaries rather than replacing them.
+
+**Verify:** make a test request with a valid request ID, locate the same ID in JSON logs, and compare the corresponding status/latency with the analytics record. Repeat with an invalid request-ID value and confirm the logged identifier is safe and bounded.
+
+## Export Prometheus carefully
+
+Prometheus export is disabled by default. Its default listener is `127.0.0.1:9090`, `internal_only` is enabled, and authentication is required. A configuration that exposes the listener beyond loopback must still require authentication; a zero or excessive output limit is rejected. The exporter provides request, bandwidth, duration, security, and rate-limit metrics labelled by proxy-host ID (and status class where applicable).
+
+Do not claim a bundled dashboard, long-term metrics retention, or alerting integration that you have not deployed. Keep the metrics listener private or behind an authenticated monitoring path.
+
+**Verify:** enable the exporter on loopback with authentication, query it from the local monitoring agent, and confirm complete Prometheus exposition lines. Attempt an unsafe external/no-auth configuration during validation; BeaRust should reject it rather than starting that listener.

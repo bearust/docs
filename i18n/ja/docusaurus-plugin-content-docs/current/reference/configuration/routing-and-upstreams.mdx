@@ -1,0 +1,76 @@
+---
+sidebar_position: 3
+---
+
+# Routing and upstreams
+
+At least one `[[upstream_pools]]` and one `[[routes]]` are required. The
+following is the complete routing and upstream portion of the checked-in
+`config/bearust.example.toml` base configuration:
+
+```toml
+[[upstream_pools]]
+name = "api"
+algorithm = "round_robin"
+
+[[upstream_pools.backends]]
+address = "127.0.0.1:9001"
+health_check = "http"
+health_path = "/health"
+
+[[upstream_pools.backends]]
+address = "127.0.0.1:9002"
+health_check = "tcp"
+
+[[routes]]
+name = "api-v1"
+host = "api.example.com"
+path_prefix = "/v1"
+upstream_pool = "api"
+
+[[routes]]
+name = "api-root"
+host = "api.example.com"
+path_prefix = "/"
+upstream_pool = "api"
+```
+
+## Pools and backends
+
+| Field | Type / default | Valid values or validation |
+| --- | --- | --- |
+| `name` | string, required | Unique pool name. Avoid the reserved `proxy-host-` prefix. |
+| `algorithm` | enum, required | `round_robin`, `least_connections`, `weighted`, `ip_hash`, `adaptive_weight`, or `plugin`. |
+| `connect_timeout_seconds` | positive integer, `3` | Connection timeout. |
+| `request_timeout_seconds` | positive integer, `30` | Request timeout. |
+| `passive_health` | boolean, `false` | Feeds real-traffic failures into eligibility in addition to active checks. |
+| `backends` | array, required | Must not be empty. |
+| `backends.address` | socket address, required | Backend target. |
+| `backends.health_check` | enum, required | `tcp` or `http`. |
+| `backends.health_path` | optional string | For `http`, required and must begin with `/` with no control characters. |
+| `backends.weight` | integer, `1` | Inclusive range `1`–`1000`. |
+
+Use `weighted` when backend `weight` should affect selection. `plugin` is a
+selection algorithm value, not proof that a plugin is loaded; configure and
+validate the plugin runtime separately.
+
+## Routes
+
+| Field | Rule |
+| --- | --- |
+| `name` | Required and unique. Do not use the `proxy-host-` prefix. |
+| `host` | Required, non-empty host authority without whitespace/control characters, paths, user info, queries, or fragments. DNS names are normalized to lowercase, an optional numeric port is removed, and one trailing dot is removed. Bracketed IPv6 is accepted; malformed hosts are rejected. |
+| `path_prefix` | Required and must begin with `/`. |
+| `upstream_pool` | Required and must name an existing pool. |
+
+Two routes may not have the same normalized host and exact path prefix.
+Duplicate route names and duplicate pool names are rejected. Keep an explicit
+`/` route when a host must serve paths not covered by a more specific prefix.
+
+Validate before deployment:
+
+```sh
+bearust validate --config /etc/bearust/bearust.toml
+```
+
+See [configuration overview](./overview) for reload and ownership behavior.

@@ -1,0 +1,63 @@
+---
+sidebar_position: 1
+---
+
+# Proxy hosts and load balancing
+
+Use native TOML routes for the data-plane routes that ship with a deployment. Use control-plane proxy-host records for hosts managed through the authenticated UI or control API. They are separate sources of runtime configuration; do not assume that editing one changes the other.
+
+## Match a host and path
+
+BeaRust resolves a request by host and path prefix. Define the more specific path before the fallback only for human readability: the resolver selects the matching prefix, so `/v1` can route differently from `/` on the same host.
+
+```toml
+[[upstream_pools]]
+name = "catalog"
+algorithm = "least_connections"
+connect_timeout_seconds = 3
+request_timeout_seconds = 30
+passive_health = true
+
+[[upstream_pools.backends]]
+address = "192.0.2.10:9000" # Example documentation address
+health_check = "http"
+health_path = "/health"
+
+[[upstream_pools.backends]]
+address = "192.0.2.11:9000" # Example documentation address
+health_check = "tcp"
+
+[[routes]]
+name = "catalog-api"
+host = "catalog.example.test"
+path_prefix = "/v1"
+upstream_pool = "catalog"
+
+[[routes]]
+name = "catalog-root"
+host = "catalog.example.test"
+path_prefix = "/"
+upstream_pool = "catalog"
+```
+
+After validating and atomically replacing the mounted configuration, reload the process with `SIGHUP`. See [the first proxy guide](../getting-started/first-proxy) for the container workflow.
+
+**Verify:** send requests with `Host: catalog.example.test` to `/v1/...` and `/...`; access logs should show the selected route and upstream, and a request with an unmatched host or path should not reach either backend.
+
+## Select healthy backends
+
+`round_robin` rotates through eligible backends. `least_connections` chooses the eligible backend with the fewest in-flight requests. `plugin` permits a reviewed `balance.select` plugin to nominate a healthy candidate; an unavailable, invalid, or unhealthy plugin selection falls back to BeaRust's normal selection.
+
+TCP checks test connectivity. HTTP checks also require `health_path`. The health supervisor uses the global `[health]` interval, timeout, and healthy/unhealthy thresholds. A backend begins as ineligible until it passes active health checks.
+
+`connect_timeout_seconds` bounds connection establishment and `request_timeout_seconds` bounds the upstream request. When connection setup fails, BeaRust excludes that attempted backend and retries another eligible backend. If no eligible backend remains, the request cannot be proxied and the data plane returns `503`.
+
+With `passive_health = true`, failed connections and `5xx` responses count toward passive failure handling; active health checks remain the recovery mechanism. Enable passive health only after observing the normal error rate, because an application-generated `5xx` can temporarily remove a backend from eligibility.
+
+**Verify:** stop one test backend and wait for its configured unhealthy threshold. Repeated requests should continue through the healthy backend; when every backend is unhealthy, a request should return `503`. Restore the stopped backend and observe it re-enter only after the healthy threshold is met.
+
+## Choose the configuration owner
+
+Native `[[routes]]` and `[[upstream_pools]]` are file-managed and reload with the TOML configuration. Control-plane proxy-host records are persisted management state and are applied through the authenticated management workflow. Avoid defining competing ownership for the same public host until you have tested the resolved runtime behavior in a non-production environment.
+
+**Verify:** make one deliberate change through the selected owner, then inspect the control-plane/UI status and send a host-specific request. Record which route and backend handled it before promoting the change.

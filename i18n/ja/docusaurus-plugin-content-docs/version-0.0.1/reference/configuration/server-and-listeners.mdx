@@ -1,0 +1,67 @@
+---
+sidebar_position: 2
+---
+
+# Server and listener configuration
+
+`[server]` is required; `bind` is required. Fields omitted below use the
+library defaults, which differ from the explicit Compose example where noted.
+
+| Field | Type / default | Notes |
+| --- | --- | --- |
+| `bind` | socket address, required | Main HTTP or HTTPS listener. |
+| `control_bind` | socket address, `127.0.0.1:0` | Control-plane listener. Compose explicitly sets `0.0.0.0:8081` and publishes it to host loopback only. |
+| `control_database` | path, `./data/bearust.sqlite` | SQLite path when `DATABASE_URL` is unset. |
+| `certificate_store` | path, `./data/certificates` | Persistent certificate material root. |
+| `graceful_shutdown_seconds` | positive integer, `30` | Pingora drain/grace timeout. |
+| `pid_file` | path, `./bearust.pid` | Exclusive server PID file. |
+| `trusted_proxy_cidrs` | string array, `[]` | Direct peers whose forwarding headers may be trusted for client identity. |
+| `tls` | optional table | Enables native TLS; both paths are required. |
+| `http3` | table | Disabled by default; see below. |
+
+```toml
+[server]
+bind = "0.0.0.0:8080"
+control_bind = "127.0.0.1:8081"
+control_database = "/var/lib/bearust/bearust.sqlite"
+certificate_store = "/var/lib/bearust/certificates"
+pid_file = "/run/bearust/bearust.pid"
+graceful_shutdown_seconds = 30
+trusted_proxy_cidrs = ["192.0.2.0/24"]
+
+[server.tls]
+cert_path = "/run/secrets/example-fullchain.pem"
+key_path = "/run/secrets/example-privkey.pem"
+```
+
+The certificate paths must be non-empty. Keep the private key readable only by
+the service account; the paths above are placeholders, not usable credentials.
+Do not trust `X-Forwarded-For` or related forwarding headers from a peer not
+listed in `trusted_proxy_cidrs`.
+
+## HTTP/3
+
+| Field | Type / default | Validation |
+| --- | --- | --- |
+| `server.http3.enabled` | boolean, `false` | Requires `[server.tls]`. |
+| `server.http3.bind` | socket address, `127.0.0.1:8443` | UDP/QUIC listener. |
+
+```toml
+[server.http3]
+enabled = true
+bind = "0.0.0.0:8443"
+```
+
+HTTP/3 uses the native TLS certificate and key and cannot be enabled without
+them. Permit the chosen UDP port through the network boundary. Changing TLS or
+listener settings needs listener/process replacement; it is not merely a
+route-table reload.
+
+## Health defaults
+
+`[health]` supplies active-check defaults: `interval_seconds = 10`,
+`timeout_seconds = 2`, `unhealthy_threshold = 3`, and `healthy_threshold = 2`.
+Each must be positive. These settings apply to the health supervisor rebuilt
+with a runtime configuration reload.
+
+Prometheus configuration is documented in [security and observability](./security-and-observability).

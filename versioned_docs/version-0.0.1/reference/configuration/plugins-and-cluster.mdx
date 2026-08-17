@@ -1,0 +1,70 @@
+---
+sidebar_position: 5
+---
+
+# Plugins and cluster configuration
+
+## Plugins
+
+`[plugins]` is native TOML configuration. It defaults to disabled.
+
+| Field | Default | Validation |
+| --- | --- | --- |
+| `enabled` | `false` | When true, `directory` must not be empty. |
+| `directory` | `./plugins` | Plugin root. |
+| `max_plugins` | `64` | `1`–`256`. |
+| `max_module_bytes` | `16777216` | `1`–`67108864` (16–64 MiB cap). |
+| `max_memory_pages` | `256` | `1`–`4096`. |
+| `max_fuel` | `10000000` | `1`–`1000000000`. |
+| `invocation_timeout_ms` | `1000` | `1`–`60000`. |
+| `max_output_bytes` | `65536` | `1`–`2097152`. |
+| `require_signature` | `false` | boolean; require signed plugin artifacts when enabled. |
+
+```toml
+[plugins]
+enabled = true
+directory = "/var/lib/bearust/plugins"
+require_signature = true
+max_plugins = 64
+max_module_bytes = 16777216
+max_memory_pages = 256
+max_fuel = 10000000
+invocation_timeout_ms = 1000
+max_output_bytes = 65536
+```
+
+The plugin registry is a CLI concern, not TOML: set
+`BEARUST_PLUGIN_REGISTRY_URL` or pass `--registry-url`. Use `plugin keygen`,
+`plugin sign`, and `require_signature` together for signed deployments. See
+[the CLI reference](../cli).
+
+## Cluster
+
+`[cluster]` defaults to a standalone node: `node_id = "node1"`, no peers,
+`bind = "127.0.0.1:0"`, `timeout_seconds = 2`, and an empty `auth_token`.
+
+| Field | Validation |
+| --- | --- |
+| `node_id` | Non-empty; no whitespace or control characters. |
+| `peers` | At most 64 entries. Each has `node_id` and socket-address `address`; peer IDs and addresses are unique and no peer ID may equal the local node ID. |
+| `bind` | Socket address for the peer transport. |
+| `timeout_seconds` | Inclusive range `1`–`60`. |
+| `auth_token` | Required only when peers exist; 32–256 bytes. It is not serialized into cluster status. |
+
+```toml
+[cluster]
+node_id = "node-a"
+bind = "10.0.0.10:9092"
+timeout_seconds = 2
+auth_token = "replace-with-a-secret-from-your-secret-manager"
+
+[[cluster.peers]]
+node_id = "node-b"
+address = "10.0.0.11:9092"
+```
+
+`CLUSTER_PEERS` uses `node_id=host:port` entries separated by commas, for
+example `node-b=10.0.0.11:9092,node-c=10.0.0.12:9092`. `NODE_ID`,
+`CLUSTER_PEERS`, and `CLUSTER_AUTH_TOKEN` take precedence over TOML during
+parsing. Keep the shared token in a secret manager and restrict the cluster
+listener to the private network.

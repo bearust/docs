@@ -1,0 +1,70 @@
+---
+sidebar_position: 4
+---
+
+# Metrics and errors
+
+## Prometheus metrics
+
+When `[prometheus].enabled` is false, `/metrics` returns `404`. When
+`require_auth` is true (the default), an unauthenticated request receives
+`401`. The endpoint returns Prometheus text with content type
+`text/plain; version=0.0.4`.
+
+If `prometheus.bind` equals `server.control_bind`, `/metrics` is available on
+the control listener. With a different bind, BeaRust starts a dedicated
+listener whose router contains only `/metrics`; it does not expose the rest of
+the control plane. `internal_only = true` requires a loopback bind. An external
+metrics listener must set `require_auth = true`.
+
+The response is capped by `max_output_bytes` (default 256 KiB; maximum 4 MiB).
+BeaRust truncates only at complete exposition lines, never in the middle of a
+sample. Analytics include `bearust_requests_total` (with `proxy_host_id` and
+`status_class`), `bearust_bandwidth_bytes_total`,
+`bearust_request_duration_ms`, `bearust_security_events_total`, and
+`bearust_rate_limit_events_total`; advisor and plugin metrics are appended
+within the same overall cap.
+
+## Request logs and proxy failures
+
+With `--json-logs`, request completion is a structured event containing the
+request ID, method, path, resolved route/upstream, status, latency, and error
+category. Error categories include `client`, `upstream`, `internal`,
+`timeout`, `connect`, and `no_healthy_upstream` according to Pingora error
+source/type. A route with no healthy selectable backend returns `503`; a
+non-matching route is `404`.
+
+## Configuration, CLI, and plugin errors
+
+Configuration loading reports read failures, `invalid TOML`, or a stable
+`field: message` validation error. Use `bearust validate` to check the exact
+file before a reload. CLI errors distinguish configuration, runtime/PID,
+server, plugin-signing, and plugin-registry failures. Plugin operations reject
+invalid IDs, missing/incorrect-length signing keys, unreadable manifests or
+modules, signer/download verification failures, and an existing target unless
+`--force` is supplied.
+
+## Control-plane error envelope
+
+Authenticated control-plane endpoints commonly return this JSON shape for
+handled application failures:
+
+```json
+{
+  "code": "example_error_code",
+  "message": "A safe human-readable explanation"
+}
+```
+
+Status and code vary by endpoint. Typical client cases include `400` validation
+errors, `401` authentication failures, `403` authorization or `csrf_invalid`,
+and `404` absent resources. Upstream activation failures can return `502` with
+`reload_failed`; a database failure can return `500` with `database_error`.
+Plugin failures are reported with their plugin-specific safe error codes, and
+cluster configuration writes can be unavailable, have an unknown outcome after
+a transport timeout, or require a retry with the same command ID after quorum
+is restored. Do not expose database URLs, tokens, private keys, or provider
+responses in client-visible error handling or diagnostic reports.
+
+This page documents shared behavior only; endpoint-specific contracts are
+owned by the control-plane API reference.

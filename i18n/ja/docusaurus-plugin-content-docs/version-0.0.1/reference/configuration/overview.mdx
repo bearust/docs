@@ -1,0 +1,77 @@
+---
+sidebar_position: 1
+---
+
+# Configuration overview
+
+BeaRust reads one TOML file. `serve` and `validate` default to `bearust.toml`;
+the Compose service explicitly mounts its file at `/etc/bearust/bearust.toml`.
+The top-level structure is `[server]`, optional `[health]`, one or more
+`[[upstream_pools]]` with backends, one or more `[[routes]]`, and optional
+`[rate_limit]`, `[prometheus]`, `[cluster]`, and `[plugins]` sections. Unknown
+fields are rejected.
+
+Start with the checked-in `config/bearust.example.toml`: it is a complete
+configuration that routes `api.example.com` to two local example backends.
+See [routing and upstreams](./routing-and-upstreams) for the exact shape.
+
+## Parse, validate, and apply
+
+`bearust validate --config <path>` reads TOML and applies semantic validation.
+Errors identify one of these categories:
+
+| Failure | Meaning |
+| --- | --- |
+| `cannot read configuration <path>: ...` | The file could not be read. |
+| `invalid TOML: ...` | TOML syntax or structure did not deserialize. |
+| `<field>: <message>` | A parsed value violated a configuration rule. |
+
+For file-managed routes and pools, replace the file atomically and send
+`SIGHUP` (or use `bearust reload`). BeaRust builds the candidate runtime and
+starts replacement health supervision before swapping it in; a rejected
+candidate leaves the current runtime running. Health state is preserved for
+unchanged pool names across reloads.
+
+The control plane persists its current runtime configuration in its database.
+At startup, persisted runtime configuration is applied when present. For a
+control-plane runtime change, BeaRust validates the candidate, saves it to the
+database first, and then applies it to the live runtime. If that runtime apply
+fails, it restores the previously persisted configuration and reports the
+failure. After a successful apply, BeaRust attempts to mirror the candidate to
+the TOML file; a read-only mount does not reject the already-persisted live
+update. Database-backed policy records (such as WAF, IP security, bot, host
+authentication, and per-host rate limits) are distinct from native TOML
+settings and are refreshed separately.
+
+## Ownership and reserved names
+
+Native TOML routes and pools are operator-managed. Enabled control-plane proxy
+hosts are materialized as one pool and one route each, both named
+`proxy-host-<id>`. Names beginning `proxy-host-` are reserved: materialization
+removes such entries before rebuilding them. Do not use that prefix for TOML
+pool or route names.
+
+## Replacement boundaries
+
+Route, pool, health, and policy snapshots can be rebuilt in the runtime. On
+Unix, `SIGHUP` is also a supervised process-replacement path: the supervisor
+loads and validates the candidate TOML and native TLS settings, starts an
+upgrade child with that candidate, and waits for its readiness marker for up to
+five seconds. The upgrade child configures its TCP/TLS service from the
+candidate and receives inherited Pingora listener file descriptors. Once it is
+ready, the supervisor sends `SIGQUIT` to the old child so Pingora drains its
+sessions. An invalid TOML/TLS candidate, a failed spawn, or a child that never
+becomes ready leaves the old child authoritative; an unready replacement is
+killed.
+
+Consequently, changes to the main bind or native TLS are applied through this
+validated replacement rather than an arbitrary in-process rebind. HTTP/3 is
+also constructed at child startup from the candidate `server.http3` and TLS
+settings; its UDP listener is a separate task, and a listener failure is logged
+by that child. The control and dedicated Prometheus listeners are likewise
+created during child startup. Certificate activation explicitly applies the
+runtime configuration and then asks this supervisor to perform the replacement
+so the newly selected TLS material reaches the listener.
+
+Only `NODE_ID`, `CLUSTER_PEERS`, and `CLUSTER_AUTH_TOKEN` override TOML values
+during parsing. See [environment variables](../environment-variables).

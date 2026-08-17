@@ -1,0 +1,102 @@
+---
+id: api-cluster-and-plugins
+sidebar_position: 9
+---
+
+# Cluster and plugins API
+
+See the [API overview](./overview.mdx) for the shared session and CSRF
+contract. The cluster endpoint exposes safe status only: it never returns peer
+addresses, cluster credentials, manifest paths, module bytes, or runtime
+diagnostics. Prometheus `/metrics` is already covered centrally in [Metrics
+and errors](../metrics-and-errors.mdx); it includes bounded advisor and plugin
+metrics when enabled.
+
+## Route table
+
+| Method | Path | Permission | Success | Implemented errors |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/cluster/status` | `proxy_hosts.read` global | `200 ClusterSnapshot` | `401 unauthorized`, `403 forbidden` |
+| `GET` | `/api/plugins` | `plugins.read` | `200 PluginStatus[]` | `401 unauthorized`, `403 forbidden` |
+| `POST` | `/api/plugins/reload` | `plugins.manage` | `200 PluginReloadResponse` | `401`, `403`, plugin error status/code |
+| `POST` | `/api/plugins/{id}/enable` | `plugins.manage` | `200 PluginStatus` | `400 invalid_input` or plugin error, `401`, `403`, `404 not_found` |
+| `POST` | `/api/plugins/{id}/disable` | `plugins.manage` | `200 PluginStatus` | `400 invalid_input` or plugin error, `401`, `403`, `404 not_found` |
+| `DELETE` | `/api/plugins/{id}` | `plugins.manage` | `204` empty body | `400 invalid_input` or plugin error, `401`, `403`, `404 not_found` |
+| `POST` | `/api/plugins/{id}/health-check` | `plugins.read` | `200 PluginHealthResponse` | `400 invalid_input` or plugin error, `401`, `403`, `404 not_found`, `409 disabled` |
+
+## Cluster snapshot
+
+`ClusterSnapshot` has `local_node_id`, `cluster_enabled`, `total_peers`,
+`healthy_peers`, `peers`, `timestamp`, `raft_role`, `raft_leader_id`,
+`raft_term`, `raft_last_log_index`, `raft_commit_index`,
+`raft_quorum_available`, and `raft_sync_state`. `timestamp` is RFC3339 UTC.
+Peer rows contain only `node_id`, `status`, `latency_ms`, and `error`; peer
+status is `healthy`, `unhealthy`, `unreachable`, or `timeout`. `latency_ms`
+and `error` are nullable.
+
+Raft role is `standalone`, `leader`, `follower`, `candidate`, or `unknown`.
+`raft_leader_id` is nullable; term and indexes are non-negative counters.
+`raft_quorum_available` is the operation-readiness signal, not a count of
+healthy transport probes. `raft_sync_state` is a safe implementation status
+such as `standalone`, `transport_ready`, `stopped`, or `unknown`; clients
+should display it rather than infer membership from a peer address. No write
+or audit event occurs when reading status.
+
+## Plugin list and lifecycle
+
+`PluginStatus` exposes only:
+
+```json
+{
+  "id": "test-plugin",
+  "display_name": "Test plugin",
+  "abi_version": 2,
+  "digest": "safe-content-digest",
+  "enabled": true,
+  "loaded": true,
+  "last_error_code": null,
+  "created_at": "2026-08-17T00:00:00Z",
+  "updated_at": "2026-08-17T00:00:00Z",
+  "trust_status": "trusted"
+}
+```
+
+`POST /api/plugins/reload` scans the configured plugin directory off the
+request executor and returns `{ "loaded": number, "failed": number }`.
+Partial reload is still `200`: `failed` reports entries that did not load, and
+the audit outcome is `failure` with `partial_failure`; a complete reload has
+outcome `success`. Lifecycle operations audit a redacted `plugin_lifecycle`
+entry with only safe plugin ID/operation/outcome/error code. The runtime emits
+`plugins.changed` only after a committed lifecycle snapshot; failed reloads do
+not emit a success event.
+
+Path IDs must be URL-encoded by clients and, after decoding, be 1--64 bytes of
+lowercase ASCII letters, digits, or `-`. For example, use
+`/api/plugins/test-plugin/disable`; spaces, slashes, uppercase letters, and
+empty IDs return `400 invalid_input`. Encode an ID with the platform URL
+encoder rather than concatenating untrusted text into a path.
+
+Enable and disable return the new safe status. Unload removes the currently
+loaded plugin and returns `204`. Health check returns `{ "status": integer,
+"elapsed_ms": integer, "detail": string|null }`; `detail` is available only
+from ABI v2 and has already been bounded by the runtime. A disabled plugin's
+health check returns `409 disabled`; it does not implicitly re-enable it.
+
+Plugin errors always use the shared safe envelope. Manifest/signature/ID
+problems return `400` with one of `invalid_manifest`, `abi_mismatch`,
+`duplicate_id`, `max_plugins`, `signature_required`, `malformed_signature`,
+`invalid_signature`, or `key_mismatch`. A missing plugin is `404 not_found`;
+a disabled plugin is `409 disabled`; runtime timeout, fuel, memory, or trap is
+`502` with `timeout`, `fuel_exhausted`, `memory_limit`, or `trap`; and compile,
+I/O, or trust-store availability is `503` with `compile_failed`, `io_error`,
+or `trust_store_corrupt`.
+
+```sh
+plugin_id='test-plugin'
+curl --fail-with-body -k -b "$cookie_jar" \
+  -H "X-CSRF-Token: $csrf_token" \
+  -X POST "https://127.0.0.1:8081/api/plugins/${plugin_id}/health-check"
+```
+
+Use only a locally installed test plugin in lifecycle calls. Plugin management
+is global; proxy-host scopes do not grant `plugins.read` or `plugins.manage`.

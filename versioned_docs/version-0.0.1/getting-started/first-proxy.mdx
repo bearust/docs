@@ -1,0 +1,67 @@
+---
+sidebar_position: 3
+---
+
+# Configure your first proxy
+
+The checked-in `config/bearust.example.toml` is a complete starting shape. It routes `api.example.com` traffic to the `api` upstream pool.
+
+```toml
+[server]
+bind = "0.0.0.0:8080"
+control_bind = "0.0.0.0:8081"
+
+[health]
+
+[[upstream_pools]]
+name = "api"
+algorithm = "round_robin"
+
+[[upstream_pools.backends]]
+address = "127.0.0.1:9001"
+health_check = "http"
+health_path = "/health"
+
+[[upstream_pools.backends]]
+address = "127.0.0.1:9002"
+health_check = "tcp"
+
+[[routes]]
+name = "api-v1"
+host = "api.example.com"
+path_prefix = "/v1"
+upstream_pool = "api"
+```
+
+`control_bind = "0.0.0.0:8081"` makes the control service reachable inside the
+container network. In the supplied Docker Compose file, host publication is
+still limited to `127.0.0.1:8081`; that Compose mapping provides the safety
+boundary. Do not use this bind directly on an untrusted host interface. Keep
+the control plane loopback-only or put it behind an HTTPS gateway with access
+control.
+
+`[server]` configures listeners and persistent paths. `[health]` supplies health-check timing defaults when values are omitted. Each `[[upstream_pools]]` names a load-balanced backend group; its `[[upstream_pools.backends]]` entries define reachable addresses and either TCP checks or HTTP checks with a `health_path`. Each `[[routes]]` matches a host and path prefix, then selects a pool. Add the `/` route from the example when the same host should handle paths beyond `/v1`.
+
+## Validate and reload
+
+Validate the mounted configuration before changing a running proxy:
+
+```sh
+docker compose exec bearust bearust validate --config /etc/bearust/bearust.toml
+```
+
+After replacing the configured TOML atomically, reload it without restarting the Compose service:
+
+```sh
+docker compose kill -s HUP bearust
+```
+
+## Verify routing
+
+The example hostname is a routing key, so test it with an explicit `Host` header from the Docker host:
+
+```sh
+curl -i -H 'Host: api.example.com' http://127.0.0.1:8080/v1
+```
+
+When a fixture backend is not running or fails its health check, `503` is the expected result: the route matched but no healthy backend was selectable. A `404` instead usually means the host or path prefix did not match. For a live deployment, replace the fixture addresses with container- or network-reachable backends and confirm their health endpoint before treating a `503` as a proxy failure.

@@ -7,8 +7,8 @@ const baseUrl = process.env.DOCS_BASE_URL ?? '/';
 
 const config: Config = {
   title: 'BeaRust',
-  tagline: 'A configuration-driven reverse proxy and load balancer.',
-  favicon: 'img/favicon.svg',
+  tagline: 'The Rust-powered reverse proxy, load balancer, and WAF.',
+  favicon: 'img/favicon.png',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
@@ -18,14 +18,30 @@ const config: Config = {
   url: siteUrl,
   baseUrl,
 
+  stylesheets: [
+    {
+      href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap',
+      type: 'text/css',
+    },
+  ],
+
   onBrokenLinks: 'throw',
 
-  // Even if you don't use internationalization, you can use this field to set
-  // useful metadata like html lang. For example, if your site is Chinese, you
-  // may want to replace "en" with "zh-Hans".
+  markdown: {
+    mermaid: true,
+  },
+
+  // English is the default and fallback locale. Indonesian and Japanese are
+  // enabled for gradual, page-by-page translation: untranslated pages fall
+  // back to their English source content rather than 404ing.
   i18n: {
     defaultLocale: 'en',
-    locales: ['en'],
+    locales: ['en', 'id', 'ja'],
+    localeConfigs: {
+      en: {label: 'English'},
+      id: {label: 'Bahasa Indonesia'},
+      ja: {label: '日本語'},
+    },
   },
 
   presets: [
@@ -36,11 +52,39 @@ const config: Config = {
           sidebarPath: './sidebars.ts',
           exclude: ['superpowers/**'],
         },
-        blog: false,
+        blog: {
+          showReadingTime: true,
+          feedOptions: {
+            type: ['rss', 'atom'],
+            xslt: true,
+          },
+          onInlineTags: 'warn',
+          onInlineAuthors: 'warn',
+          onUntruncatedBlogPosts: 'warn',
+        },
         theme: {
           customCss: './src/css/custom.css',
         },
       } satisfies Preset.Options,
+    ],
+  ],
+
+  themes: [
+    '@docusaurus/theme-mermaid',
+    [
+      '@easyops-cn/docusaurus-search-local',
+      {
+        hashed: true,
+        // The plugin's tokenizer supports a fixed language list; 'id' is not
+        // one of them. English tokenization still indexes Indonesian and
+        // Japanese content usably (word-boundary search, no stemming) until
+        // upstream adds Indonesian support.
+        language: ['en', 'ja'],
+        indexDocs: true,
+        indexBlog: true,
+        indexPages: false,
+        docsRouteBasePath: '/docs',
+      },
     ],
   ],
 
@@ -52,14 +96,38 @@ const config: Config = {
       title: 'BeaRust',
       logo: {
         alt: 'BeaRust logo',
-        src: 'img/logo.svg',
+        src: 'img/logo.png',
       },
       items: [
         {
           type: 'docSidebar',
           sidebarId: 'docsSidebar',
           position: 'left',
-          label: 'Documentation',
+          label: 'Docs',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'apiSidebar',
+          position: 'left',
+          label: 'API',
+        },
+        {
+          to: '/blog',
+          position: 'left',
+          label: 'Blog',
+        },
+        {
+          href: 'https://github.com/rizalord/bearust/discussions',
+          position: 'left',
+          label: 'Community',
+        },
+        {
+          type: 'docsVersionDropdown',
+          position: 'right',
+        },
+        {
+          type: 'localeDropdown',
+          position: 'right',
         },
         {
           href: 'https://github.com/rizalord/bearust',
@@ -78,6 +146,27 @@ const config: Config = {
               label: 'Introduction',
               to: '/docs/introduction/what-is-bearust',
             },
+            {
+              label: 'API reference',
+              to: '/docs/reference/api/api-overview',
+            },
+            {
+              label: 'Blog',
+              to: '/blog',
+            },
+          ],
+        },
+        {
+          title: 'Community',
+          items: [
+            {
+              label: 'GitHub Discussions',
+              href: 'https://github.com/rizalord/bearust/discussions',
+            },
+            {
+              label: 'Issues',
+              href: 'https://github.com/rizalord/bearust/issues',
+            },
           ],
         },
         {
@@ -87,6 +176,10 @@ const config: Config = {
               label: 'Source code',
               href: 'https://github.com/rizalord/bearust',
             },
+            {
+              label: 'Docker Hub',
+              href: 'https://hub.docker.com/r/rizalord/bearust',
+            },
           ],
         },
       ],
@@ -95,6 +188,9 @@ const config: Config = {
     prism: {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
+    },
+    mermaid: {
+      theme: {light: 'neutral', dark: 'dark'},
     },
   } satisfies Preset.ThemeConfig,
 };

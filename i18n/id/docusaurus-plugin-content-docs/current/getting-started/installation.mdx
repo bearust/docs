@@ -1,0 +1,179 @@
+---
+sidebar_position: 1
+---
+
+# Instal BeaRust
+
+BeaRust dikemas sebagai satu image Docker, `rizalord/bearust`, yang dipublikasikan di Docker Hub. Anda
+tidak perlu meng-clone repository source untuk menjalankannya — quick start di halaman ini hanya membuat dua
+file dan menjalankan stack dari image yang sudah dipublikasikan. Bagian kedua membahas build dari source
+checkout sebagai alternatif, untuk kontributor atau siapa pun yang ingin membangun image secara lokal.
+
+## Prasyarat
+
+- Docker Engine dengan Docker Compose plugin tersedia sebagai `docker compose`.
+- Dua file yang Anda buat sendiri: `docker-compose.yml` dan file konfigurasi route. Tidak ada yang lain.
+
+## Quick start (tanpa clone)
+
+### 1. Buat direktori kerja
+
+```sh
+mkdir bearust && cd bearust
+```
+
+### 2. Tulis `docker-compose.yml`
+
+Ini adalah stack berorientasi produksi: data plane di `8080`, API kontrol dan UI hanya di
+`127.0.0.1:8081`, state persisten di named volume Docker, dan container yang read-only serta non-root.
+
+```yaml title="docker-compose.yml"
+services:
+  bearust:
+    image: rizalord/bearust:latest
+    command: ["serve", "--config", "/etc/bearust/bearust.toml", "--json-logs"]
+    ports:
+      - "8080:8080"
+      - "127.0.0.1:8081:8081"
+    volumes:
+      - "./bearust.toml:/etc/bearust/bearust.toml:ro"
+      - bearust-data:/data
+      - bearust-tls:/etc/bearust/tls
+    environment:
+      RUST_LOG: "info"
+      # Atur ini sekali untuk menghindari setup token sekali-pakai yang
+      # dihasilkan otomatis saat startup pertama. Gunakan nilai acak yang
+      # panjang — jangan pernah nilai asli di version control atau
+      # dokumentasi yang dibagikan.
+      BEARUST_SETUP_TOKEN: ""
+    working_dir: /run/bearust
+    healthcheck:
+      test: ["CMD-SHELL", "test -s /run/bearust/bearust.pid && nc -z 127.0.0.1 8080 && nc -z 127.0.0.1 8081"]
+      interval: 5s
+      timeout: 3s
+      start_period: 10s
+      retries: 20
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777
+      - /run/bearust:uid=10001,gid=10001,mode=0755
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+
+volumes:
+  bearust-data:
+  bearust-tls:
+```
+
+### 3. Tulis `bearust.toml` minimal
+
+Ini menjalankan BeaRust tanpa route yang dikonfigurasi — cukup untuk boot, mengakses API setup, dan
+memverifikasi kesehatan. Tambahkan upstream pool dan route setelah Anda punya backend untuk dituju (lihat
+[Konfigurasi proxy pertama](./first-proxy)).
+
+```toml title="bearust.toml"
+[server]
+bind = "0.0.0.0:8080"
+control_bind = "0.0.0.0:8081"
+control_database = "/data/bearust.sqlite"
+pid_file = "/run/bearust/bearust.pid"
+certificate_store = "/data/certificates"
+
+[health]
+```
+
+### 4. Jalankan stack
+
+```sh
+docker compose up -d
+```
+
+### 5. Verifikasi deployment
+
+```sh
+docker compose ps
+curl --fail http://127.0.0.1:8081/api/setup/status
+```
+
+Harapkan service `bearust` menampilkan `running (healthy)` dan perintah curl mengembalikan
+`{"initialized":false}` pada deployment baru (atau `true` setelah setup). Status sehat itu mencakup
+pemeriksaan Compose untuk PID file dan kedua listener container, `8080` (data plane) dan `8081`
+(control plane).
+
+Lanjutkan ke [pengaturan awal](./first-time-setup) untuk membuat administrator pertama.
+
+## Setup token
+
+Pada start pertama berbasis SQLite, BeaRust menghasilkan setup token sekali-pakai dan menuliskannya ke area
+data persisten dengan izin owner-only. Pada host tepercaya, ambil token tersebut dari container yang
+berjalan tanpa menyalinnya ke tiket, chat, atau shell history:
+
+```sh
+docker compose exec bearust cat /data/setup-token
+```
+
+Log startup mencatat bahwa file token dibuat, tapi tidak mencetak nilai tokennya. Untuk mengatur bootstrap
+token yang deterministik, tambahkan nilai acak yang panjang ke environment variable `BEARUST_SETUP_TOKEN`
+di `docker-compose.yml`, atau pindahkan ke file `.env` di sebelah file Compose:
+
+```dotenv title=".env"
+BEARUST_SETUP_TOKEN=ganti-dengan-nilai-acak-yang-panjang
+```
+
+Gunakan nilai itu hanya untuk [pengaturan awal](./first-time-setup). Token tidak menggantikan autentikasi
+administrator normal setelah inisialisasi.
+
+## Menggunakan database eksternal (PostgreSQL atau MySQL)
+
+Stack default menggunakan SQLite. Untuk menggunakan PostgreSQL atau MySQL, tambahkan service yang sesuai ke
+`docker-compose.yml` Anda dan arahkan `DATABASE_URL` ke sana:
+
+```yaml title="docker-compose.yml (potongan — tambahkan di bawah services:)"
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: bearust
+      POSTGRES_PASSWORD: "<password-postgres>"
+      POSTGRES_DB: bearust
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+```
+
+Tambahkan `postgres-data:` di bawah `volumes:`, tambahkan entri environment `DATABASE_URL` ke service
+`bearust`, dan buat `bearust` bergantung pada health check `postgres`:
+
+```dotenv title=".env"
+DATABASE_URL=postgres://bearust:<password-postgres>@postgres:5432/bearust
+```
+
+Gunakan placeholder berbentuk kredensial dalam dokumentasi dan otomasi, jangan pernah password asli. Compose
+menunggu health check database yang dipilih, dan BeaRust menjalankan migrasi saat startup. Beralih dari
+SQLite ke PostgreSQL bukan perubahan in-place: lakukan dan uji export/import eksplisit, simpan volume
+`bearust-data` lama sebagai salinan rollback, dan **jangan hapus** sampai deployment baru terverifikasi.
+
+## Build dari source checkout
+
+Jika Anda berkontribusi ke BeaRust atau ingin membangun image sendiri alih-alih menarik `rizalord/bearust`,
+clone repository source dan gunakan file Compose bawaannya, yang mendukung build lokal serta profil
+tambahan:
+
+```sh
+git clone https://github.com/rizalord/bearust.git
+cd bearust
+cp .env.example .env
+docker compose up -d --build
+```
+
+Ini menggunakan `config/bearust.example.toml` dari checkout, bukan file yang Anda tulis sendiri, dan
+mendukung profil PostgreSQL/MySQL yang sama seperti di atas via
+`docker compose --profile postgres up -d --build`. Lihat
+[pengaturan pengembangan kontributor](../contributing/development-setup) jika Anda berencana memodifikasi
+BeaRust sendiri.
+
+Selanjutnya, [inisialisasi administrator pertama](./first-time-setup).

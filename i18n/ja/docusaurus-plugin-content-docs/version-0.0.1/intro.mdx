@@ -1,0 +1,31 @@
+---
+sidebar_position: 1
+---
+
+# BeaRust ドキュメント
+
+BeaRust は設定駆動型のリバースプロキシ兼ロードバランサーです。Rust 製のデータプレーンをアプリケーション
+バックエンドの前段に配置し、Axum 製のコントロールプレーンと同梱の管理 UI でプロキシ設定を操作します。
+
+まず [BeaRust とは？](./introduction/what-is-bearust) を読み、その後
+[本番インストール](./getting-started/installation) と
+[最初のプロキシ](./getting-started/first-proxy) のガイドに進んでください。コンポーネントの全体像は
+[アーキテクチャ](./introduction/architecture) を、デフォルトで無効な機能や開発中の機能については
+[機能ステータス](./introduction/feature-status) を参照してください。
+
+## 目的に合わせて進む
+
+- **BeaRust をデプロイする:** [Docker Compose でインストール](./getting-started/installation) した後、
+  [初回セットアップ](./getting-started/first-time-setup) を完了します。
+- **トラフィックをルーティングする:** リポジトリに含まれる TOML の例から
+  [最初のプロキシ](./getting-started/first-proxy) を設定します。
+- **ローカルで開発する:** Rust バックエンドと Vite フロントエンドで
+  [開発スタック](./getting-started/development-stack) を起動します。
+- **本番トラフィックを運用する:** [プロキシホストとロードバランシング](./operate/proxy-hosts-and-load-balancing)
+  を管理し、[TLS と証明書](./operate/tls-and-certificates) やセキュリティ機能を1つずつ追加します。
+- **よくある問題を解決する:** [トラブルシューティング](./getting-started/troubleshooting) で診断方法と
+  想定される挙動を確認します。
+
+このドキュメントの正本(canonical source)は英語です。インドネシア語と日本語への翻訳はページ単位で順次
+公開中です — 未翻訳のページは英語で表示されます。ドキュメントの例やサポート依頼に認証情報、秘密鍵、本番
+URL を含めないでください。

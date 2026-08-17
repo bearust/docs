@@ -1,0 +1,119 @@
+---
+id: api-ai-advisor
+sidebar_position: 8
+---
+
+# AI Advisor API
+
+The AI Advisor is optional. All its routes use the [API overview](./overview.mdx)
+for sessions and CSRF; it records only redacted request/result data. Analysis
+requests create asynchronous jobs, so a `202` does not mean an insight is
+ready or that a draft has been applied.
+
+## Route table
+
+| Method | Path | Permission | Success | Implemented errors |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/ai-advisor/status` | `ai_advisor.read` | `200 {"enabled":boolean}` | `401 unauthorized`, `403 forbidden` |
+| `POST` | `/api/ai-advisor/analyses` | `ai_advisor.request` | `202 AdvisorJob` | `400 advisor_invalid_request`, `401`, `403`, `409 advisor_busy`, `502 advisor_unavailable`, `503 advisor_disabled`, `500 database_error` |
+| `GET` | `/api/ai-advisor/insights` | `ai_advisor.read` | `200 AdvisorJobPage` | `400 advisor_invalid_request`, `401`, `403`, `500 database_error` |
+| `POST` | `/api/ai-advisor/drafts/{id}/approve` | `ai_advisor.approve` | `200 AdvisorJob` | `400 advisor_invalid_request`, `401`, `403`, `404 not_found`, `409 advisor_conflict|advisor_stale_draft|advisor_expired`, `500 database_error` |
+| `POST` | `/api/ai-advisor/drafts/{id}/reject` | `ai_advisor.approve` | `200 AdvisorJob` | `400 advisor_invalid_request`, `401`, `403`, `404 not_found`, `409 advisor_conflict|advisor_expired`, `500 database_error` |
+
+Unauthorized permission checks are themselves audited as
+`ai_advisor_authorization_denied`. Normal users can list only their own jobs;
+the listing is not a global insight feed.
+
+Check whether the advisor is enabled with the session cookie from the
+[API overview](./overview.mdx#sessions-and-csrf):
+
+```sh
+curl --fail-with-body -k -b "$cookie_jar" \
+  'https://127.0.0.1:8081/api/ai-advisor/status'
+```
+
+```json
+{"enabled": true}
+```
+
+## Analysis workflow
+
+Create a job with an exact JSON object containing `workflow` plus optional
+`host_id`, `from`, `to`, and `command`:
+
+```json
+{
+  "workflow": "incident_explanation",
+  "host_id": 42,
+  "from": "2026-08-17T00:00:00Z",
+  "to": "2026-08-17T00:15:00Z",
+  "command": "Explain the test-only traffic spike."
+}
+```
+
+Workflows are `incident_explanation`, `security_summary`, `rule_tuning`, and
+`configuration_draft`. `host_id`, if supplied, is positive; `from` and `to`
+are RFC3339 UTC timestamps and can span at most 31 days; `from` cannot be
+later than `to`; `command` is at most 4,096 bytes. The route has a 16 KiB
+request-body cap. Unknown fields, invalid workflow/timestamps, an excessive
+range, or an oversized command return `400 advisor_invalid_request`.
+
+On acceptance, BeaRust snapshots and redacts the relevant data, persists a
+queued job, audits `ai_advisor_requested`, emits `ai_advisor.changed`, and
+starts background synchronization. The job has a one-hour expiry. If the
+advisor is disabled it returns `503 advisor_disabled`; provider, timeout,
+circuit, or output failures use the safe `502 advisor_unavailable` envelope
+for the initial operation where applicable and are retained as job errors.
+
+An `AdvisorJob` includes `job_id` (a UUID), `workflow`, `status`,
+`redacted_input`, `redacted_result`, `error_code`, `provider_model`,
+`config_version`, `config_hash`, `created_at`, `updated_at`, `expires_at`,
+`draft_decision`, and `draft_decided_at`. Status values are `queued`,
+`running`, `completed`, `failed`, `approved`, `rejected`, and `expired`.
+Stored error values are `advisor_disabled`, `advisor_busy`, `advisor_timeout`,
+`advisor_provider_unavailable`, `advisor_invalid_response`,
+`advisor_response_too_large`, `advisor_circuit_open`,
+`advisor_invalid_request`, `advisor_stale_draft`, and `advisor_expired`.
+Times are RFC3339 strings; `draft_decision` is `approved`, `rejected`, or
+`null`.
+
+Non-draft completed results are an object tagged by their workflow with
+`summary`, `severity` (`info`, `warning`, or `critical`), `signals`,
+`reason_ids`, and `score` (0--100). The provider output is validated and
+redacted before persistence; raw prompts, provider credentials, and unredacted
+provider responses are not API fields.
+
+## Insight pagination
+
+`GET /api/ai-advisor/insights?page=&page_size=` returns:
+
+```json
+{"items":[],"page":1,"page_size":20,"total":0}
+```
+
+`page` defaults to 1 and values below 1 become 1. `page_size` defaults to 20
+and is clamped to 1--100. Rows are the caller's jobs in descending
+`created_at`, then descending `job_id` order. The response's normalized page
+and page size are authoritative; there is no cursor or cross-user pagination.
+
+## Configuration drafts
+
+Only a completed, unexpired `configuration_draft` job can be approved or
+rejected. `{id}` must be a UUID; a valid UUID that is absent or belongs to a
+non-draft job returns `404 not_found`. A job not still pending returns `409
+advisor_conflict`; an expired job returns `409 advisor_expired`.
+
+A completed draft result has `workflow: "configuration_draft"`, a non-empty
+`summary` no longer than 2,048 bytes, `action: "set_waf_mode"`, `mode`
+(`monitor-only` or `block`), and a 64-character hexadecimal
+`expected_config_hash`. Approval compares its stored configuration version and
+both hashes to the current WAF configuration. A mismatch returns `409
+advisor_stale_draft` without changing the WAF.
+
+On a valid approval, the WAF mode and draft decision are changed atomically,
+then the WAF reloads. A reload failure compensates both the WAF mode and draft
+decision before returning `500 database_error`. Success audits
+`ai_advisor_draft_approved`, records the approved decision, and emits
+`ai_advisor.changed`. Rejection records the rejected decision, audits
+`ai_advisor_draft_rejected`, and emits the same event; neither action accepts
+a request body.

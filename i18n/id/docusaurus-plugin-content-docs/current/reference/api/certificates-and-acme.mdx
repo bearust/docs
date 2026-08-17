@@ -1,0 +1,166 @@
+---
+id: api-certificates-and-acme
+sidebar_position: 4
+---
+
+# Certificates and ACME API
+
+All certificate routes require an authenticated session, global certificate
+permission, and the CSRF header for their `POST` writes. A custom
+proxy-host scope does not authorize certificate operations.
+
+## Route table
+
+| Method | Path | Permission | Success | Key failures |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/certificates` | `certificates.read` | `200 CertificateMetadata[]` | `401`, `403`, `500` |
+| `POST` | `/api/certificates` | `certificates.write` | `201 CertificateUploadResponse` | `400`, `401`, `403`, `409`, `413` |
+| `POST` | `/api/certificates/{id}/activate` | `certificates.write` | `204` | `400`, `401`, `403`, `404`, `502 reload_failed` |
+| `POST` | `/api/certificates/acme` | `certificates.write` | `202 AcmeJobResponse` | `400 invalid_hostname|unsupported_challenge`, `401`, `403`, `409 acme_busy`, `502 acme_failed` |
+| `POST` | `/api/certificates/{id}/renew` | `certificates.write` | `202 AcmeJobResponse` | `401`, `403`, `404 not_found`, `409 acme_busy`, `502 acme_failed` |
+| `GET` | `/api/certificates/{id}/status` | `certificates.read` | `200 AcmeStatus` | `401`, `403`, `404 not_found`, `500 acme_failed` |
+
+`204 No Content` from activation has no response JSON. Successful upload,
+activation, issue, and renewal notification flows publish
+`certificates.changed` to the authenticated event stream.
+
+## Certificate list and upload
+
+Certificate list entries contain:
+
+```json
+{
+  "id": 12,
+  "name": "test-cert",
+  "source": "custom",
+  "covered_hostnames": ["app.example.test"],
+  "expiry": "Jul 18 00:00:00 2027 GMT",
+  "active": false
+}
+```
+
+These six fields are the complete certificate-list response. ACME state is
+available only from `GET /api/certificates/{id}/status`. Upload uses
+`multipart/form-data`, not JSON. Supply these exact field names:
+
+| Multipart field | Required | Value |
+| --- | --- | --- |
+| `name` | Yes | Certificate label as UTF-8 text. |
+| `certificate` | Yes | PEM certificate bytes. |
+| `key` | Yes | PEM private-key bytes. |
+
+The total multipart data may not exceed 3 MiB and each individual field may
+not exceed 1 MiB; excess data returns `413 Payload Too Large`. Missing fields,
+invalid multipart data, or invalid certificate/key material returns `400`.
+A persistence conflict returns `409`. On `201`, the response deliberately
+omits `active`:
+
+```json
+{
+  "id": 12,
+  "name": "test-cert",
+  "source": "custom",
+  "covered_hostnames": ["app.example.test"],
+  "expiry": "Jul 18 00:00:00 2027 GMT"
+}
+```
+
+Use files that exist only on the local test machine. Never paste PEM data into
+a command line or store a private key in a cookie jar.
+
+```sh
+curl --fail-with-body -k -b "$cookie_jar" \
+  -H "X-CSRF-Token: $csrf_token" \
+  -F 'name=test-cert' \
+  -F 'certificate=@./testdata/cert.pem;type=application/x-pem-file' \
+  -F 'key=@./testdata/key.pem;type=application/x-pem-file' \
+  https://127.0.0.1:8081/api/certificates
+```
+
+## Activation
+
+`POST /api/certificates/{id}/activate` validates the stored certificate paths,
+makes that certificate active, and reloads TLS state. An unknown ID is `404`; a
+record with invalid material is `400`; a failed runtime reload is `502` with
+`reload_failed`. On a reload failure, the handler restores the prior active
+certificate state before returning the failure.
+
+```sh
+curl --fail-with-body -k -b "$cookie_jar" \
+  -H "X-CSRF-Token: $csrf_token" \
+  -X POST https://127.0.0.1:8081/api/certificates/12/activate
+```
+
+## ACME issue and renewal
+
+`POST /api/certificates/acme` accepts this JSON shape:
+
+```json
+{
+  "environment": "staging",
+  "challenge": "http01",
+  "hostnames": ["app.example.test"],
+  "cloudflare_token": "test-only-token"
+}
+```
+
+`environment` is exactly `staging` or `production`. BeaRust selects the
+corresponding Let's Encrypt directory and keeps account keys namespaced by
+environment; use `staging` to test an integration and switch intentionally to
+`production` for a trusted hostname. `challenge` is exactly `http01` or
+`cloudflare_dns01`.
+
+For `http01`, BeaRust serves the HTTP-01 value only at the exact
+`/.well-known/acme-challenge/{token}` path. Wildcard hostnames are rejected
+with `400 unsupported_challenge`. For `cloudflare_dns01`, send a
+`cloudflare_token`; `cloudflare_api_token` is accepted as an input alias for
+compatibility. The token is write-only: it is not serialized in a job,
+certificate, status, audit record, or API error. The service zeroes its local
+request bytes after use.
+
+Hostnames are trimmed, lowercased, deduplicated, and validated. Empty values,
+whitespace, malformed DNS names, malformed wildcards, or no remaining hostname
+return `400 invalid_hostname`.
+
+An accepted issue or renewal responds while its job is running:
+
+```json
+{"job_id":"test-job-id","certificate_id":12}
+```
+
+The status is `202 Accepted`, not a guarantee that issuance has completed.
+Only one ACME operation may run at a time; contention is `409 acme_busy`.
+Provider/service failures are `502 acme_failed`. Renewal additionally returns
+`404 not_found` when the certificate has no ACME status.
+
+## Status response and safe failure handling
+
+`GET /api/certificates/{id}/status` returns:
+
+```json
+{
+  "certificate_id": 12,
+  "environment": "staging",
+  "challenge": "http01",
+  "hostnames": ["app.example.test"],
+  "renewal_state": "issued",
+  "next_renewal_at": "2027-06-18T00:00:00Z",
+  "last_attempt_at": "2026-08-17T00:00:00Z",
+  "last_error_code": null
+}
+```
+
+The two timestamps and `last_error_code` can be `null`. Use the error code as
+the safe renewal-failure signal; do not expect provider responses, account
+keys, certificates, key paths, private keys, or Cloudflare credentials in a
+status or error response. `404 not_found` means no ACME status exists for that
+certificate; `500 acme_failed` means status lookup was unavailable.
+
+## Source pointers
+
+The HTTP handlers and responses are in `bearust/src/control_plane/mod.rs` and
+`bearust/src/control_plane/models.rs`. ACME input processing and the write-only
+token boundary are in `bearust/src/certificates/acme_service.rs`; directory and
+environment behavior are in `bearust/src/acme/client.rs`. Relevant integration
+tests include `tests/acme_http01.rs`, `tests/acme_dns01.rs`,
+`tests/certificate_renewal.rs`, and `tests/certificates.rs`.

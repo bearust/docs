@@ -1,0 +1,25 @@
+---
+sidebar_position: 3
+---
+
+# ACME automation
+
+Use ACME from the authenticated control plane and prove the workflow against the staging CA before requesting a production certificate. Certificate jobs report a job envelope; certificate status exposes renewal state, next renewal time, last attempt, and a stable error code when applicable.
+
+## Choose a challenge
+
+Use `http01` for ordinary hostnames when public DNS reaches this BeaRust instance and TCP port 80 reaches the proxy. The CA must be able to fetch `/.well-known/acme-challenge/<token>` without another proxy, authentication layer, or redirect policy blocking it. HTTP-01 cannot issue wildcard names.
+
+Use `cloudflare_dns01` for wildcard names such as `*.example.test`, or when HTTP-01 reachability is not practical. Hostnames are normalized and validated; empty names, whitespace, malformed DNS labels, and invalid wildcard placement are rejected.
+
+Provide provider credentials only as an environment value or a request placeholder such as `CLOUDFLARE_API_TOKEN=replace-with-a-restricted-token`. Do not put a real token in TOML, shell history, screenshots, or support tickets. For Cloudflare, use a scoped token with `Zone:DNS:Edit` and `Zone:Zone:Read`, not a global API key.
+
+**Verify:** submit a staging issue request for a hostname you control and inspect its status until it is active. For HTTP-01, confirm the public challenge URL is reachable; for DNS-01, confirm the temporary `_acme-challenge` record is created and cleaned up.
+
+## Issue, renew, and recover
+
+First create the proxy host and verify its upstream is healthy. Issue with `environment: staging`; only repeat with `environment: production` after staging succeeds. BeaRust serializes operations for the same certificate, validates and activates certificate material before updating the active state, then reloads the configuration.
+
+Renewals run in the background before expiry. Transient failures enter a retrying state with bounded backoff; the prior active certificate remains selected if issuance, validation, or reload fails. Review the status error code, fix the underlying DNS, reachability, credential, or CA rate-limit problem, then retry through the authenticated workflow.
+
+**Verify:** after a successful staging run, make a fresh TLS connection and confirm the certificate covers the requested hostname. If an attempt fails, status should show the failed or retrying state and error code while the last known-good certificate remains served.

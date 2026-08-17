@@ -1,0 +1,74 @@
+---
+sidebar_position: 5
+---
+
+# Troubleshooting
+
+Run diagnostics from the BeaRust checkout unless a command says otherwise. Redact passwords, setup tokens, API keys, and private keys before sharing any output.
+
+## The container health check stays unhealthy
+
+```sh
+docker compose ps
+docker compose logs --tail=100 bearust
+```
+
+Expect a healthy service only after its PID file exists and both container listeners accept connections. The Compose health check tests `/run/bearust/bearust.pid`, port `8080`, and port `8081`; logs should identify a configuration, database, or bind failure when it does not become healthy.
+
+## A host port is already in use
+
+```sh
+docker compose up -d --build
+```
+
+Expect Compose to name the failed host port binding, commonly `8080`, `8081`, or `5183` for development. Stop or reconfigure the conflicting local process, or set the relevant port variable in `.env`; retain the production control plane's loopback-only mapping.
+
+## Setup reports an invalid or missing token
+
+```sh
+curl http://127.0.0.1:8081/api/setup/status
+docker compose logs --tail=100 bearust
+```
+
+Expect `{"initialized":false}` before setup. If no deterministic `BEARUST_SETUP_TOKEN` was supplied for the SQLite default, BeaRust generates a token in its persistent data area and logs the token-file event (not the token value). Retrieve it only on a trusted host with `docker compose exec bearust cat /data/setup-token`. If status is already initialized, setup cannot be repeated; use an existing administrator instead of trying a new setup token.
+
+## Named volume state is stale
+
+```sh
+docker volume ls | rg 'bearust'
+```
+
+Expect to see `bearust-data` and `bearust-tls` for the production project, or development-specific volumes for the dev stack. Restarting preserves those volumes by design. For a disposable local development reset only, run `docker compose -f docker-compose.dev.yml down -v`; do not delete production state or a pre-migration SQLite volume as a troubleshooting shortcut.
+
+## PostgreSQL profile does not start
+
+```sh
+docker compose --profile postgres config --services
+```
+
+Expect `bearust` and `postgres` in the rendered service list. Ensure `.env` contains one matching PostgreSQL `DATABASE_URL` and `POSTGRES_*` set, then use only `--profile postgres`; do not enable both database profiles. Replace the example password before production use and keep database URLs out of logs.
+
+## The configuration is rejected
+
+```sh
+docker compose exec bearust bearust validate --config /etc/bearust/bearust.toml
+```
+
+Expect `configuration is valid` for a valid file. Otherwise, the command reports the invalid field: common causes are a missing upstream pool, a route with a non-`/` path prefix, or an HTTP health check without `health_path`.
+
+## TLS configuration is invalid
+
+```sh
+docker compose logs --tail=100 bearust
+```
+
+Expect startup to identify unreadable or invalid certificate/key material. When `[server.tls]` is enabled, both certificate and private-key paths are required; keep private keys in `bearust-tls` with restrictive permissions. An HTTP/3 configuration also requires TLS, so correct TLS first before enabling it.
+
+## A route returns `503`
+
+```sh
+curl -i -H 'Host: api.example.com' http://127.0.0.1:8080/v1
+docker compose logs --tail=100 bearust
+```
+
+Expect `503` when the route matches but every backend is unavailable or unhealthy. Verify backend addresses are reachable from the container and that each TCP port or HTTP `health_path` responds. A `404` points instead to a host or path-prefix mismatch.

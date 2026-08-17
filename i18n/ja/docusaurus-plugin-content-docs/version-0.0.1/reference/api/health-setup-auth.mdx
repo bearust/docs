@@ -1,0 +1,125 @@
+---
+id: api-health-setup-auth
+sidebar_position: 2
+---
+
+# Health, setup, and authentication API
+
+All examples use a local or test-only address. Read the [API overview](./overview.mdx)
+before using a session-authenticated mutation.
+
+## Route table
+
+| Method | Path | Session / permission | Success | Other implemented outcomes |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/health` | Public | `200` status object | — |
+| `GET` | `/api/setup/status` | Public | `200` initialized boolean | `500 database_error` |
+| `POST` | `/api/setup/initialize` | Public; CSRF-exempt | `201` user, normally with session + CSRF cookies | `400 invalid_input`, `403 invalid_setup_token`, `409 already_initialized`, `429` |
+| `POST` | `/api/auth/login` | Public; CSRF-exempt | `200` user with session + CSRF cookies | `401 invalid_credentials`, `429 rate_limited` |
+| `POST` | `/api/auth/logout` | No handler authentication; CSRF when CSRF cookie exists | `204` | — |
+| `GET` | `/api/auth/me` | Session cookie | `200` user | `401` |
+| `PATCH` | `/api/auth/me/preferences` | Session cookie + CSRF | `200` user | `400 invalid_input`, `401 unauthorized`, `500 database_error` |
+| `GET` | `/api/auth/me/theme` | Session cookie | `200` theme preference | `401`, `500 database_error` |
+| `PATCH` | `/api/auth/me/theme` | Session cookie + CSRF | `200` theme preference | `400 invalid_input`, `401` |
+| `GET` | `/api/events` | Session cookie | `200` SSE stream | `401 unauthorized` |
+
+## User response shape
+
+Setup, login, current-user, and locale preference writes serialize a user as:
+
+```json
+{
+  "id": 1,
+  "email": "admin@example.test",
+  "role": "admin",
+  "created_at": "2026-08-17T00:00:00Z",
+  "disabled": false,
+  "preferred_locale": null
+}
+```
+
+`preferred_locale` is a string or `null`. It is not a locale list and the
+accepted values are validated by the server.
+
+## Health and first setup
+
+`GET /api/health` is a narrow liveness response and does not assert database,
+upstream, certificate, or authorization health.
+
+`GET /api/setup/status` reports whether any user exists. To create the first
+administrator, send exactly `email`, `password`, and `setup_token` to
+`POST /api/setup/initialize`. The email is trimmed and lowercased; the password
+must be at least 12 characters. On a successful `201`, the response is the
+user object. The server attempts to create a session and set both cookies, but
+the administrator remains created even if that session creation fails; log in
+afterward in that rare case.
+
+```sh
+curl --fail-with-body -k \
+  -H 'Content-Type: application/json' \
+  --data '{"email":"admin@example.test","password":"test-password-at-least-12","setup_token":"local-test-setup-token"}' \
+  https://127.0.0.1:8081/api/setup/initialize
+```
+
+Do not repeat setup as a login mechanism. After initialization it returns
+`409` with `already_initialized`. Invalid tokens return `403`; malformed email
+or a short password return `400`; rapid attempts can return `429`.
+
+## Login, logout, and current user
+
+`POST /api/auth/login` accepts:
+
+```json
+{"email":"admin@example.test","password":"test-password-at-least-12"}
+```
+
+On `200`, it returns the user object and sets `bearust_session` plus
+`bearust_csrf`. A failed credential check returns the safe `401`
+`invalid_credentials` envelope; rate limiting returns `429 rate_limited`.
+
+`POST /api/auth/logout` revokes the presented session if one is present and
+always responds `204`, including without one. It is CSRF-protected when the
+request carries a current CSRF cookie. `GET
+/api/auth/me` returns `401` when the cookie is absent, expired, revoked, or
+belongs to a disabled user.
+
+## Preferences and theme
+
+`PATCH /api/auth/me/preferences` requires an object containing
+`preferred_locale`. Supply a locale string to set it or `null` to clear it;
+omitting the field, unknown fields, or an invalid locale returns `400
+invalid_input`.
+
+```json
+{"preferred_locale":"en"}
+```
+
+`GET /api/auth/me/theme` returns exactly:
+
+```json
+{"preferred_theme":"system"}
+```
+
+`preferred_theme` may also be `"light"`, `"dark"`, or `null`. Patch the same
+single field; invalid JSON, unknown fields, or an unsupported value return
+`400 invalid_input`.
+
+## Events stream
+
+`GET /api/events` uses `text/event-stream`. The initial event is `ready` with
+`{}` data. Subsequent notifications include an event name and JSON data; when
+the subscriber lags it receives `reconnect` with `{"reason":"lagged"}`.
+The server sends a heartbeat every 15 seconds and rechecks the session on that
+interval. Reconnect by fetching current resource state; event IDs cannot replay
+missed events.
+
+```sh
+curl -k -N -b "$cookie_jar" https://127.0.0.1:8081/api/events
+```
+
+## Source pointers
+
+Handlers and the SSE lifecycle are in `bearust/src/control_plane/mod.rs`;
+cookie attributes, credential failure, and logout are in
+`bearust/src/control_plane/auth.rs`; locale/theme client shapes are in
+`bearust/frontend/src/api.ts` and `tests/control_plane_locale.rs`.

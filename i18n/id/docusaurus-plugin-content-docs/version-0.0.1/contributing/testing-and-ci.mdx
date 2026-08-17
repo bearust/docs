@@ -1,0 +1,40 @@
+---
+sidebar_position: 7
+---
+
+# Testing and CI
+
+The authoritative required checks are [`.github/workflows/ci.yml`](https://github.com/rizalord/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/.github/workflows/ci.yml). From the source repository root, reproduce them exactly:
+
+```sh
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace --locked
+npm ci --prefix frontend
+npm test --prefix frontend -- --run
+npm run build --prefix frontend
+npm run validate-locales --prefix frontend
+npm run test:e2e --prefix frontend
+docker compose config
+docker compose -f docker-compose.dev.yml config
+docker build -t bearust:test .
+docker run --rm bearust:test --version
+```
+
+CI installs Chromium before the E2E command (`npx playwright install --with-deps chromium`). A fresh local host may need `npx playwright install chromium` in `frontend/` first.
+
+Choose focused coverage before the full suite:
+
+| Change | Focused tests |
+| --- | --- |
+| Proxy routing, upstream behavior, WebSocket, logging | `routing.rs`, `proxy_http.rs`, `load_balancing.rs`, `health_failover.rs`, `websocket.rs`, `log_contract.rs` |
+| Control-plane handler, permissions, audit/realtime, repository | relevant `control_plane_*.rs`, `control_plane_repository.rs`, `setup_concurrency.rs` |
+| WAF, bot, IP rules, rate limits | `waf_engine.rs`, `proxy_waf.rs`, `proxy_bot.rs`, `proxy_rate_limit.rs`, plus the matching control-plane test |
+| TLS, reload, shutdown | `reload.rs`, `reload_pid.rs`, `tls_listener.rs`, `shutdown.rs` |
+| Plugin ABI/runtime/signing | `plugin_runtime.rs`, `plugin_observability.rs`, `control_plane_plugins.rs`, `cli_plugin_signing.rs` |
+| Cluster/Raft | `cluster.rs`, `cluster_command_gateway.rs`, `cluster_raft*.rs`, `raft_three_node.rs` |
+| Dashboard | matching `frontend/src/**/*.test.*`, then E2E for browser behavior |
+| Compose/image/script changes | both Compose config commands, image smoke command, and affected script in `scripts/` |
+
+`DATABASE_URL_EXTERNAL=… cargo test --locked --test external_database` is intentionally opt-in for PostgreSQL or MySQL integration; without that variable it reports a successful skip and does not mutate a developer database.
+

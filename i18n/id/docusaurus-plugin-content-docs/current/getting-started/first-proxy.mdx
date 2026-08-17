@@ -1,0 +1,75 @@
+---
+sidebar_position: 3
+---
+
+# Konfigurasi proxy pertama Anda
+
+`config/bearust.example.toml` yang tersedia di repository adalah bentuk awal yang lengkap. File ini
+merutekan trafik `api.example.com` ke upstream pool `api`. Jika Anda mengikuti quick start tanpa clone,
+tambahkan blok yang sama ke `bearust.toml` yang Anda tulis sendiri.
+
+```toml
+[server]
+bind = "0.0.0.0:8080"
+control_bind = "0.0.0.0:8081"
+
+[health]
+
+[[upstream_pools]]
+name = "api"
+algorithm = "round_robin"
+
+[[upstream_pools.backends]]
+address = "127.0.0.1:9001"
+health_check = "http"
+health_path = "/health"
+
+[[upstream_pools.backends]]
+address = "127.0.0.1:9002"
+health_check = "tcp"
+
+[[routes]]
+name = "api-v1"
+host = "api.example.com"
+path_prefix = "/v1"
+upstream_pool = "api"
+```
+
+`control_bind = "0.0.0.0:8081"` membuat service kontrol dapat dijangkau di dalam jaringan container. Pada
+file Docker Compose yang disediakan, publikasi ke host tetap dibatasi ke `127.0.0.1:8081`; pemetaan Compose
+itulah yang menjadi batas keamanannya. Jangan gunakan bind ini langsung pada interface host yang tidak
+tepercaya. Jaga agar control plane tetap loopback-only atau tempatkan di balik gateway HTTPS dengan kontrol
+akses.
+
+`[server]` mengonfigurasi listener dan path persisten. `[health]` menyediakan default timing health-check
+saat nilai tidak diisi. Setiap `[[upstream_pools]]` menamai grup backend yang di-load-balance; entri
+`[[upstream_pools.backends]]`-nya mendefinisikan alamat yang dapat dijangkau serta TCP check atau HTTP check
+dengan `health_path`. Setiap `[[routes]]` mencocokkan host dan path prefix, lalu memilih sebuah pool.
+Tambahkan route `/` dari contoh saat host yang sama harus menangani path selain `/v1`.
+
+## Validasi dan reload
+
+Validasi konfigurasi yang di-mount sebelum mengubah proxy yang sedang berjalan:
+
+```sh
+docker compose exec bearust bearust validate --config /etc/bearust/bearust.toml
+```
+
+Setelah mengganti TOML yang dikonfigurasi secara atomik, reload tanpa me-restart service Compose:
+
+```sh
+docker compose kill -s HUP bearust
+```
+
+## Verifikasi routing
+
+Hostname pada contoh adalah kunci routing, jadi uji dengan header `Host` eksplisit dari Docker host:
+
+```sh
+curl -i -H 'Host: api.example.com' http://127.0.0.1:8080/v1
+```
+
+Ketika backend fixture tidak berjalan atau gagal health check-nya, `503` adalah hasil yang diharapkan: route
+cocok tapi tidak ada backend sehat yang bisa dipilih. `404` biasanya berarti host atau path prefix tidak
+cocok. Untuk deployment produksi, ganti alamat fixture dengan backend yang dapat dijangkau lewat container
+atau jaringan, dan verifikasi endpoint kesehatannya sebelum menganggap `503` sebagai kegagalan proxy.

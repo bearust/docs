@@ -1,0 +1,25 @@
+---
+sidebar_position: 3
+---
+
+# Feature status
+
+This page describes the behavior available in the current BeaRust source. It is a rollout guide, not a promise that every subsystem is enabled in a new installation.
+
+| Area | Status | Notes |
+| --- | --- | --- |
+| Core proxy, routes, pools, health checks, reloads | Available by default | Configure TOML routes and healthy backends before serving traffic. |
+| Control plane and bundled UI | Available by default | Docker Compose publishes it on loopback-only port `8081`. |
+| SQLite persistence | Available by default | Stored in the `bearust-data` named volume. |
+| Native TLS and ACME | Available, opt-in | Configure certificates; start ACME with staging and keep secrets private. |
+| PostgreSQL or MySQL | Available, opt-in | Select exactly one Compose database profile and migrate deliberately. |
+| WAF, IP security, bot protection, rate limiting | Available, configuration-driven | Rate limiting is disabled and monitor-only by default. Stage changes before blocking traffic. |
+| Analytics | Available, configuration-driven | Uses bounded collection and persistent summaries. |
+| Cluster and HA foundations | Available, opt-in | Single-node behavior remains the default when cluster peers are unset. |
+| WASM plugins | Available, disabled by default | Enable only reviewed local modules with bounded limits. |
+| Plugin signing, trust pinning, and registry install (CLI) | Available, opt-in | `bearust plugin keygen`/`sign`/`search`/`install`; unsigned plugins still load unless `plugins.require_signature` is set. No GUI surface for trust state or key rotation yet. |
+| Localization (English, Indonesian, Japanese) | Available by default | English is the default and fallback locale; Indonesian and Japanese cover the authenticated dashboard. |
+| AI advisor | Available, disabled by default | Requires both `LLM_API_URL` and `LLM_API_KEY`; never place provider credentials in TOML. |
+| HTTP/3 | Available, opt-in and unstable | Requires TLS and is excluded from semver guarantees. Client-facing only: BeaRust always forwards to backends over HTTP/1.1/HTTP/2. |
+
+The safest first deployment uses only the core proxy, default SQLite volume, and loopback control plane. Add one optional subsystem at a time, verify its health and rollback path, then proceed. For functionality that is scoped or discussed but not yet shipped, see the [roadmap](../roadmap).

@@ -1,0 +1,27 @@
+---
+sidebar_position: 6
+---
+
+# Bot protection
+
+Bot protection scores a bounded request fingerprint and applies `monitor`, `challenge`, or `block` when the score reaches the configured threshold. Start in monitor mode so normal automation and browsers establish a baseline before challenges or blocks affect clients.
+
+## Configure the decision
+
+The threshold is a score from 1 through 100. Rules contribute bounded weights; the configuration also sets a clearance TTL, limited to one day. The fingerprint is derived from selected request fields, including method, normalized path, and a small allow-list of headers. It is not a durable user identity.
+
+In challenge mode, a matching request is directed to the challenge flow. A successful challenge creates a clearance for the configured TTL; requests without a valid clearance remain subject to the policy. Challenge responses must not be cached by shared caches or CDNs, or one visitor could receive another visitor's challenge/clearance state. Preserve the challenge endpoint and its cookies when configuring an upstream cache or CDN.
+
+**Verify:** in a non-production environment, set a low threshold with monitor mode and send a request that matches a test rule. Confirm the score and category are recorded while the request continues. Repeat in challenge mode and verify that the challenge endpoint responds and that a solved clearance changes only the intended subsequent request.
+
+## Treat crawler claims as untrusted
+
+Trusted-crawler records contain both a user-agent predicate and a domain predicate. They are records for future signed ingress verification; a client-provided `User-Agent`, `Host`, reverse-DNS-looking value, or forwarded header alone does not prove crawler origin. Do not create an allow path based solely on headers a public client can forge.
+
+**Verify:** send the same crawler-looking headers from an ordinary client. The request should not gain trusted-crawler status solely from those headers. Review any trusted-crawler integration with its signed ingress metadata before relying on it for bypasses.
+
+## Roll back deliberately
+
+If challenge completion or legitimate automation fails, return to monitor mode first, preserve the collected evidence, and adjust one rule, threshold, or TTL at a time. Do not solve a false-positive incident by broadly disabling unrelated security controls.
+
+**Verify:** after rollback to monitor mode, the previously affected request should reach its upstream while a monitor event remains available for review.

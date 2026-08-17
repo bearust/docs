@@ -2,24 +2,28 @@ import type {ReactNode} from 'react';
 import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
 import Heading from '@theme/Heading';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 
 import styles from './index.module.css';
 
 export default function Home(): ReactNode {
+  const logoUrl = useBaseUrl('img/logo.png');
+
   return (
     <Layout
       title="Documentation"
-      description="Documentation for the BeaRust reverse proxy and load balancer.">
+      description="BeaRust: a Rust-native reverse proxy with a built-in load balancer, WAF, analytics, and free multi-node clustering.">
       <main>
         <section className={styles.hero}>
           <div className={styles.heroInner}>
-            <img className={styles.mark} src="img/logo.svg" alt="" />
+            <img className={styles.mark} src={logoUrl} alt="" />
             <div>
-              <Heading as="h1">A safer path from request to upstream.</Heading>
+              <Heading as="h1">A reverse proxy that grows with you.</Heading>
               <p className={styles.lede}>
-                BeaRust is a configuration-driven reverse proxy and load balancer
-                for teams that need clear routing, operational control, and a
-                dependable edge for application traffic.
+                BeaRust is a Rust-native reverse proxy and load balancer that installs with one
+                Docker Compose command. A built-in WAF, traffic analytics, and free multi-node
+                clustering are there when you need them — off by default, so every deployment
+                starts small and predictable.
               </p>
               <div className={styles.primaryActions}>
                 <Link className="button button--primary button--lg" to="/docs/introduction/what-is-bearust">
@@ -48,10 +52,10 @@ export default function Home(): ReactNode {
               <Heading as="h3">Configure a first proxy</Heading>
               <p>Connect a host and upstream, then validate the request path end to end.</p>
             </Link>
-            <Link className={styles.pathCard} to="/docs/contributing/development-setup">
-              <span className={styles.cardLabel}>Build with us</span>
-              <Heading as="h3">Contribute to BeaRust</Heading>
-              <p>Understand the runtime, control plane, and contributor workflow.</p>
+            <Link className={styles.pathCard} to="/docs/operate/high-availability">
+              <span className={styles.cardLabel}>Scale out</span>
+              <Heading as="h3">Cluster multiple nodes</Heading>
+              <p>Run BeaRust as a Raft-backed cluster so control-plane configuration stays in sync.</p>
             </Link>
           </div>
         </section>

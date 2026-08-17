@@ -1,0 +1,28 @@
+---
+sidebar_position: 5
+---
+
+# Control plane and database
+
+[`src/control_plane/mod.rs`](https://github.com/rizalord/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/src/control_plane/mod.rs) builds the Axum `AppState` and router. Startup in [`src/cli.rs`](https://github.com/rizalord/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/src/cli.rs) opens the database, runs migrations, creates state, restores persisted runtime configuration or materializes existing proxy hosts, then serves the authenticated API and bundled frontend.
+
+## Request and persistence boundaries
+
+Handlers use session lookup from the secure `bearust_session` cookie, RBAC permission checks, and CSRF validation for unsafe requests using the `bearust_csrf` cookie/`X-CSRF-Token` header. The repository module ([`repository.rs`](https://github.com/rizalord/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/src/control_plane/repository.rs)) is the SQLx boundary; handlers should not assemble backend SQL themselves. Successful mutations record an audit event and publish a bounded realtime invalidation/event through [`audit.rs`](https://github.com/rizalord/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/src/control_plane/audit.rs) and [`realtime.rs`](https://github.com/rizalord/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/src/control_plane/realtime.rs), then use the runtime reloader when the data plane must change.
+
+`repository::migrate` runs checked-in SQLx migrations from [`migrations/`](https://github.com/rizalord/bearust/tree/c8ed147cd84efc71bda8b8473486906b5616a505/migrations) at startup. Supported `DATABASE_URL` schemes are SQLite (the local default), PostgreSQL (via the `postgres`/`postgresql` scheme aliases), and MySQL. The normal suite uses SQLite; external database coverage is opt-in in `tests/external_database.rs`.
+
+## Clustered write outcomes
+
+The [`ConfigCommandGateway`](https://github.com/rizalord/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/src/cluster_command.rs) is the write boundary when Raft membership is active. API authorization occurs before it constructs a command. Interpret outcomes precisely:
+
+| Outcome | Meaning and caller action |
+| --- | --- |
+| **Local write** | A single-node deployment without initialized membership applies the command through the repository under the topology gate. It is durable locally, not replicated; the receipt uses leader/index `0`. |
+| **Replicated write** | An elected leader with quorum commits the command through OpenRaft and returns a receipt with command ID, leader ID, and commit index. A follower forwards to the known leader, then waits for its own apply. |
+| **Pending local apply** | A forwarded command has a concrete committed receipt but the receiving follower did not apply it before its local deadline. The command is committed; refresh/catch up or retry observation, not a new mutation. |
+| **Quorum failure** | No quorum/leader/transport path accepted a completed replicated commit. Restore availability before retrying. |
+| **Unknown commit outcome** | `client_write` timed out after submission. It may commit later; retry the **same command ID** to avoid duplicating intent. |
+
+Tests `tests/cluster_command_gateway.rs`, `tests/raft_three_node.rs`, `tests/control_plane_cluster.rs`, and `tests/control_plane_repository.rs` exercise these boundaries.
+

@@ -1,0 +1,45 @@
+---
+sidebar_position: 2
+---
+
+# Selesaikan pengaturan awal
+
+Pada direktori data yang baru, BeaRust hanya menerima tepat satu request setup. Request tersebut membuat
+administrator pertama yang aktif, kemudian inisialisasi ditutup.
+
+## Periksa status inisialisasi
+
+Control plane default bersifat lokal ke host di `127.0.0.1:8081`:
+
+```sh
+curl http://127.0.0.1:8081/api/setup/status
+```
+
+Sebelum setup, harapkan `{"initialized":false}`. Setelah administrator pertama ada, harapkan
+`{"initialized":true}`.
+
+## Buat administrator pertama
+
+Gunakan setup token yang dihasilkan otomatis atau nilai deterministik yang dikonfigurasi di
+`BEARUST_SETUP_TOKEN`. Contoh ini sengaja menggunakan placeholder; gunakan password unik minimal 12 karakter
+dan jangan menyimpan perintah dengan kredensial asli di shared history.
+
+```sh
+curl -i -c cookies.txt \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@example.com","password":"<password-administrator-minimal-12-karakter>","setup_token":"<setup-token>"}' \
+  http://127.0.0.1:8081/api/setup/initialize
+```
+
+Jika berhasil, harapkan `201 Created` dan response user `admin` yang aktif. Saat pembuatan sesi berhasil,
+response mengatur cookie HttpOnly `bearust_session` dan cookie `bearust_csrf`. Keduanya ditandai `Secure`,
+jadi `cookies.txt` mencatatnya tapi curl dan browser tidak mengirimkannya kembali ke listener control plain
+`http://127.0.0.1:8081`. Request setup dan pemeriksaan status tanpa autentikasi tetap bisa digunakan lewat
+listener HTTP lokal itu; penggunaan browser atau API yang terautentikasi memerlukan gateway HTTPS yang
+mengakhiri TLS dan meneruskan ke control plane loopback. Token yang tidak valid mengembalikan `403`, email
+tidak valid atau password kurang dari 12 karakter mengembalikan `400`, dan percobaan setup kedua
+mengembalikan `409 already_initialized`.
+
+Pemetaan loopback-only default adalah batas keamanan, bukan endpoint login publik. Jaga agar tetap lokal
+atau pasang gateway HTTPS yang diamankan secara sengaja di depannya; jangan menjadikan port `8081`
+internet-facing sebagai jalan pintas.

@@ -1,0 +1,37 @@
+---
+sidebar_position: 9
+---
+
+# Users, roles, and audit history
+
+Use the control plane to give people the least access they need. Users have a role; a custom role can carry only selected permissions and can limit a proxy-host permission to one or more hosts. A global grant applies in every applicable context. Do not treat a host-scoped grant as permission to administer global settings, users, roles, sessions, or plugin configuration.
+
+## Start with the built-in roles
+
+The system-managed roles are `admin`, `operator`, and `viewer`.
+
+| Role | Built-in capabilities |
+| --- | --- |
+| `admin` | All built-in permissions, including user, role, session, system, bot-protection, plugin, and AI-draft approval administration. The `audit_logs.export` permission key is reserved on this role, but no export endpoint is implemented yet (see [roadmap](/docs/roadmap)). |
+| `operator` | Reads proxy hosts, certificates, audit history, and AI Advisor data; can change proxy hosts and certificates; can request AI Advisor work. |
+| `viewer` | Reads proxy hosts, certificates, audit history, and AI Advisor data. |
+
+Create a custom role when those bundles are too broad. Assign only the permissions required for the job, then scope proxy-host reads or writes to the host IDs the role should manage. Test both an allowed host and an unassigned host before granting production access.
+
+**Verify:** sign in as the intended user, read and update an assigned test host, then attempt the same update against an unassigned host and a global administrative setting. Only the assigned-host action should be authorized.
+
+## Protect administrator access and sessions
+
+Keep at least two enabled administrator accounts under separate, controlled ownership. BeaRust prevents an operation that would leave no enabled administrator, so disabling, deleting, or demoting the last enabled admin is rejected. This safeguard does not replace recovery planning: retain an approved process for recovering administrator access.
+
+Disabled users cannot continue using an existing session. When a user is disabled or a session is revoked, confirm that their next authenticated control-plane request is rejected. Session cookies are `HttpOnly`, `Secure`, and `SameSite=Lax`; do not copy them into tickets, shell history, or documentation. Passwords are stored as password hashes, and audit records deliberately exclude passwords, session tokens, request bodies, and other secrets.
+
+**Verify:** revoke a test user's session (or disable that test user), retry a harmless authenticated request with its existing browser session, and confirm it no longer succeeds. Re-enable the account only if it remains part of the test plan.
+
+## Review, filter, and preserve audit history
+
+Audit history records safe event metadata and actor identifiers when available. Use the management interface's time and event/user filters to narrow an investigation, and review results in the service's returned chronological ordering rather than assuming an external log order. Plugin lifecycle records intentionally use bounded IDs, operation/outcome values, and stable error codes instead of paths, manifests, digests, or module contents.
+
+Audit history is read-only: it is evidence of control-plane activity, not a general editing surface. No role can export audit data today — the `audit_logs.export` permission key exists and is reserved on the `admin` role, but no export endpoint is implemented. Audit log export is tracked as unshipped work on the [roadmap](/docs/roadmap). Audit publication is best-effort and does not change the outcome of the action being recorded.
+
+**Verify:** perform a test configuration change, filter audit history for its event and actor, and confirm the record contains the expected safe metadata but no password, session value, or submitted secret. Confirm that no audit-history mutation control is available.

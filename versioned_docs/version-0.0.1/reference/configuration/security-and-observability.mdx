@@ -1,0 +1,58 @@
+---
+sidebar_position: 4
+---
+
+# Security and observability configuration
+
+## Native TOML settings
+
+`server.trusted_proxy_cidrs` is the native trust boundary for client identity:
+only direct peers within these CIDRs may supply forwarding headers used by the
+proxy. Keep it empty unless a trusted ingress is in front of BeaRust.
+
+`[rate_limit]` configures the native default policy:
+
+| Field | Default | Values / validation |
+| --- | --- | --- |
+| `enabled` | `false` | boolean |
+| `action` | `monitor` | `monitor` or `block` |
+| `capacity` | `100` | `1`–`1000000` |
+| `refill_per_second` | `10.0` | finite `0.001`–`100000` |
+| `key_scope` | `proxy_host_ip` | `proxy_host_ip` or `proxy_host_path_ip` |
+
+`[prometheus]` is disabled by default. Its defaults are `internal_only = true`,
+`require_auth = true`, `bind = "127.0.0.1:9090"`, and
+`max_output_bytes = 262144` (256 KiB). `max_output_bytes` must be from `1`
+through `4194304` (4 MiB). An enabled internal endpoint must bind loopback; an
+enabled endpoint exposed beyond loopback must require authentication.
+
+```toml
+[prometheus]
+enabled = true
+internal_only = true
+require_auth = true
+bind = "127.0.0.1:9090"
+max_output_bytes = 262144
+```
+
+If the Prometheus bind equals `server.control_bind`, `/metrics` is mounted on
+the control listener. Otherwise, BeaRust starts a dedicated listener exposing
+only `/metrics`, not the control-plane UI or API. See [metrics and errors](../metrics-and-errors).
+
+## Database-backed policies
+
+The following controls are persisted control-plane state, not TOML sections:
+WAF rules/configuration, IP security rules, host authentication, bot policies,
+per-host rate-limit overrides, analytics retention, adaptive-tuning emergency
+state, and user/role policy. They can refresh live policy stores after an
+authenticated management change. Their endpoints and request bodies belong to
+the control-plane API reference, not this page.
+
+## Logging
+
+`bearust serve --json-logs` selects JSON tracing output. `RUST_LOG` selects the
+filter and defaults to `info` when absent. Request completion events include
+`event = "request_complete"`, `request_id`, `method`, `path`, `route`,
+`upstream`, `status`, `latency_ms`, and `error_category`. An incoming request
+ID is accepted only when it is non-empty, at most 128 bytes, UTF-8, and uses
+letters, digits, `-`, `:`, `_`, or `.`; otherwise BeaRust generates a safe ID.

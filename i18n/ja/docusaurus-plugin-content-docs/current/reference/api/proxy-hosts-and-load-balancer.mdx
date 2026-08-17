@@ -1,0 +1,176 @@
+---
+id: api-proxy-hosts-and-load-balancer
+sidebar_position: 3
+---
+
+# Proxy hosts and load-balancer API
+
+These routes require a session. Every write also requires the matching
+`X-CSRF-Token`; see the [API overview](./overview.mdx#sessions-and-csrf).
+
+## Route table
+
+| Method | Path | Required permission / scope | Success | Key failures |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/proxy-hosts` | `proxy_hosts.read`; global or scoped | `200 Host[]` | `401`, `403`, `500` |
+| `POST` | `/api/proxy-hosts` | `proxy_hosts.write`; global | `201 Host` | `400`, `403`, `409 duplicate_domain`, `502 reload_failed` |
+| `GET` | `/api/proxy-hosts/{id}` | `proxy_hosts.read`; that host | `200 Host` | `401`, `404` |
+| `PATCH` | `/api/proxy-hosts/{id}` | `proxy_hosts.write`; that host | `200 Host` | `400`, `404`, `409`, `502 reload_failed` |
+| `DELETE` | `/api/proxy-hosts/{id}` | `proxy_hosts.write`; that host | `204` | `401`, `404`, `502 reload_failed` |
+| `GET` | `/api/proxy-hosts/{id}/auth` | `proxy_hosts.read`; that host | `200 ProxyHostAuth` | `401`, `404`, `500 database_error` |
+| `PUT` | `/api/proxy-hosts/{id}/auth` | `proxy_hosts.write`; that host | `200 ProxyHostAuth` | `400 invalid_input`, `404`, `500 database_error|hashing_error|reload_failed` |
+| `GET` | `/api/load-balancer` | `proxy_hosts.read`; global | `200 LoadBalancerSnapshot` | `401`, `403`, `503 runtime_unavailable` |
+| `PUT` | `/api/load-balancer` | `proxy_hosts.write`; global | `200 LoadBalancerSnapshot` | `400 invalid_load_balancer_config`, `401`, `403`, `502 reload_failed`, `503 runtime_unavailable` |
+
+An unauthorized read or write of a particular host is intentionally reported as
+`404`, not `403`, so a scoped user cannot discover another host. Listing is
+different: it returns only hosts visible to the user and returns `403` when
+the user has neither global nor scoped read permission. Creating a host and
+updating the whole load-balancer configuration require a global grant; a
+host-scoped grant is sufficient only for the corresponding existing host.
+
+## Proxy host representation
+
+Every host response has exactly these fields:
+
+```json
+{
+  "id": 42,
+  "name": "local test app",
+  "domain": "app.example.test",
+  "upstream_host": "127.0.0.1",
+  "upstream_port": 3000,
+  "tls_mode": "disabled",
+  "certificate_id": null,
+  "enabled": true
+}
+```
+
+`POST` and `PATCH` take the same complete request object: `name`, `domain`,
+`upstream_host`, `upstream_port`, `tls_mode`, `certificate_id`, and `enabled`.
+`tls_mode` defaults to `"disabled"` and `enabled` defaults to `true` when they
+are absent in a create request. Name, domain, and upstream host cannot be
+blank; `upstream_port` cannot be zero. Domains are stored lowercased.
+
+```sh
+curl --fail-with-body -k -b "$cookie_jar" \
+  -H "X-CSRF-Token: $csrf_token" \
+  -H 'Content-Type: application/json' \
+  --data '{"name":"local test app","domain":"app.example.test","upstream_host":"127.0.0.1","upstream_port":3000,"tls_mode":"disabled","certificate_id":null,"enabled":true}' \
+  https://127.0.0.1:8081/api/proxy-hosts
+```
+
+The create operation can reject duplicate domains with `409` and
+`duplicate_domain`. A host update can also produce `409` for a conflicting
+persisted configuration. A `502 reload_failed` means the configuration change
+was committed but was not activated in the live proxy; investigate and retry
+or repair the configuration rather than assuming it was rolled back. Successful
+host changes publish `proxy_hosts.changed`.
+
+`DELETE` has no body on `204`. Do not interpret it as a JSON response.
+
+## Per-host Basic Auth
+
+`GET /api/proxy-hosts/{id}/auth` returns only safe configuration:
+
+```json
+{
+  "host_id": 42,
+  "enabled": true,
+  "realm": "Test-only protected host",
+  "username": "test-user",
+  "updated_at": "2026-08-17T00:00:00Z"
+}
+```
+
+The password is write-only and is never returned. When no record exists, the
+endpoint returns a disabled default with `realm` set to `"BeaRust protected
+host"`, an empty `username`, and an empty `updated_at`.
+
+After authorization, this read route does not separately check whether the
+host exists. Therefore, a globally authorized reader receives that disabled
+default for an unknown `{id}` as well as for an existing host with no auth
+record. Its `404` is the authorization mask for a reader without access to the
+requested host (for example, an out-of-scope scoped reader), not an
+authoritative existence result. `PUT /api/proxy-hosts/{id}/auth` does check
+host existence and returns `404` for an unknown host after authorization.
+
+`PUT` accepts any subset of `enabled`, `realm`, `username`, and `password`.
+The existing values are retained for omitted fields. A supplied password must
+be 12--512 characters. A realm must be 1--128 characters; a username is at
+most 128 characters. Enabling Basic Auth requires a username and a stored
+password. The API stores only a password hash, reloads the host-auth runtime,
+and publishes `proxy_hosts.changed` after a successful update.
+
+```json
+{
+  "enabled": true,
+  "realm": "Test-only protected host",
+  "username": "test-user",
+  "password": "test-only-password-at-least-12"
+}
+```
+
+Never use a production Basic Auth secret in an API example or commit it to a
+repository.
+
+## Load-balancer configuration
+
+`GET /api/load-balancer` reads the attached live runtime, rather than a
+separate static view. Its response is:
+
+```json
+{
+  "generation": 7,
+  "pools": [
+    {
+      "name": "local-pool",
+      "algorithm": "round_robin",
+      "connect_timeout_seconds": 5,
+      "request_timeout_seconds": 30,
+      "passive_health": true,
+      "backends": [
+        {
+          "id": 0,
+          "address": "127.0.0.1:3000",
+          "health_check": "http",
+          "health_path": "/healthz",
+          "weight": 1,
+          "healthy": true,
+          "inflight": 0,
+          "response_time_ewma_ms": null,
+          "passive_failures": 0
+        }
+      ]
+    }
+  ],
+  "routes": [{"name":"test-route","host":"app.example.test","path_prefix":"/","upstream_pool":"local-pool"}],
+  "capabilities": {
+    "algorithms": ["round_robin","least_connections","weighted","ip_hash","adaptive_weight","plugin"],
+    "health_checks": ["tcp","http"],
+    "passive_health": true,
+    "adaptive_weighting": true
+  }
+}
+```
+
+`id`, `healthy`, `inflight`, `response_time_ewma_ms`, and `passive_failures`
+are runtime observations, not write fields. `PUT /api/load-balancer` accepts
+only `pools` and `routes`. Each pool requires `name`, `algorithm`,
+`connect_timeout_seconds`, `request_timeout_seconds`, `passive_health`, and a
+`backends` array. A backend has `address`, `health_check` (`tcp` or `http`),
+`health_path` (string or `null`), and `weight`. Each route has `name`, `host`,
+`path_prefix`, and `upstream_pool`.
+
+The server validates the complete candidate configuration before persisting or
+activating it. It returns `400 invalid_load_balancer_config` when validation
+fails, `503 runtime_unavailable` when no live runtime is attached, and `502
+reload_failed` when a committed update cannot be applied.
+
+## Source pointers
+
+Route handlers and the runtime snapshot are in
+`bearust/src/control_plane/mod.rs`; wire types are in
+`bearust/src/control_plane/models.rs` and `bearust/frontend/src/api.ts`.
+Permission/scope behavior is in `bearust/src/control_plane/rbac.rs`; runtime
+read/write behavior is covered by `tests/control_plane_load_balancer.rs`.

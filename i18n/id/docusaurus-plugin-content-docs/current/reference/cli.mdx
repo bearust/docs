@@ -1,0 +1,69 @@
+---
+sidebar_position: 1
+---
+
+# CLI reference
+
+Run `bearust` from the deployment that owns the configuration and PID file. The
+default configuration path for `serve` and `validate` is `bearust.toml`; the
+default reload PID path is `./bearust.pid`.
+
+## Server commands
+
+| Command | Purpose |
+| --- | --- |
+| `bearust serve [--config <path>] [--json-logs]` | Validates the file, starts the proxy and control plane, and acquires `server.pid_file`. `--json-logs` enables structured tracing output. |
+| `bearust validate [--config <path>]` | Parses and validates TOML without starting listeners. A successful run prints `configuration is valid`. |
+| `bearust reload [--pid-file <path>]` | Checks that the recorded Unix process is running, sends `SIGHUP`, then prints `reload signal sent`. |
+
+Use validation before an atomic file replacement, then reload the running
+process. A rejected reload keeps the active runtime snapshot; it does not
+partially publish an invalid route or pool configuration. `reload` is a Unix
+signal operation and reports an invalid, missing, or non-running PID safely.
+
+```sh
+bearust validate --config /etc/bearust/bearust.toml
+bearust serve --config /etc/bearust/bearust.toml --json-logs
+bearust reload --pid-file /run/bearust/bearust.pid
+```
+
+## Plugin commands
+
+| Command | Purpose |
+| --- | --- |
+| `bearust plugin keygen --out <directory>` | Creates an Ed25519 private key at `<directory>/signing.key` and prints its public key. |
+| `bearust plugin sign <plugin-directory> --key <path>` | Signs `plugin.toml` and its declared WASM module, writing `<plugin-directory>/plugin.sig`. |
+| `bearust plugin search <query> [--registry-url <url>]` | Searches the registry index. |
+| `bearust plugin install <id> --out <directory> [--yes] [--force] [--registry-url <url>]` | Downloads, verifies, confirms, and installs a registry plugin. |
+
+`keygen` refuses to overwrite an existing `signing.key`. On Unix, it creates
+that private key with mode `0600`; protect the output directory on other
+platforms as well. Never place private-key bytes in shell history, source
+control, or a diagnostic attachment.
+
+`sign` requires a readable 32-byte signing key, `plugin.toml`, and the module
+named by that manifest. It writes `plugin.sig`; use a disposable test plugin
+when checking the workflow.
+
+Registry resolution is, in order: `--registry-url`, a non-empty
+`BEARUST_PLUGIN_REGISTRY_URL`, then BeaRust's built-in registry URL. Search
+output is terminal-sanitized. Install validates a lowercase letter/digit/hyphen
+plugin ID, verifies the downloaded artifact and signer, displays its version,
+capabilities, and signer, then asks `Install this plugin? [y/N]:`. Declining
+prints `aborted`; `--yes` suppresses only that confirmation. Existing targets
+are rejected unless `--force` is set. Installation writes to a temporary
+directory and renames it only after the artifact is ready, so a failed download
+or verification does not leave a partially installed plugin.
+
+```sh
+bearust plugin keygen --out ./private-plugin-key
+bearust plugin sign ./example-plugin --key ./private-plugin-key/signing.key
+bearust plugin search example
+bearust plugin install example-plugin --out ./plugins
+```
+
+After a successful install, load it through the authenticated plugin-management
+workflow; this page intentionally does not document that control-plane API.
+
+See [plugins and cluster configuration](./configuration/plugins-and-cluster)
+for runtime limits and signature policy.

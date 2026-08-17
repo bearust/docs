@@ -1,0 +1,34 @@
+{
+  "version.label": {
+    "message": "Berikutnya",
+    "description": "The label for version current"
+  },
+  "sidebar.docsSidebar.category.Introduction": {
+    "message": "Pengenalan",
+    "description": "The label for category 'Introduction' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Get started": {
+    "message": "Mulai",
+    "description": "The label for category 'Get started' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Operate BeaRust": {
+    "message": "Mengoperasikan BeaRust",
+    "description": "The label for category 'Operate BeaRust' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Reference": {
+    "message": "Referensi",
+    "description": "The label for category 'Reference' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Configuration": {
+    "message": "Konfigurasi",
+    "description": "The label for category 'Configuration' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Control-plane API": {
+    "message": "API Control-Plane",
+    "description": "The label for category 'Control-plane API' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Contributing": {
+    "message": "Berkontribusi",
+    "description": "The label for category 'Contributing' in sidebar 'docsSidebar'"
+  }
+}

@@ -1,0 +1,31 @@
+---
+sidebar_position: 5
+---
+
+# WAF and IP security
+
+Roll out request blocking in monitor mode first. The WAF evaluates bounded request metadata and can allow, log, or block; IP rules can allow, monitor, or block matching CIDRs. Invalid records are not silently turned into blocking rules at runtime, but control-plane validation should be part of every change review.
+
+## Build and test WAF rules
+
+WAF rules have an action, category, enabled state, and `matcher_json`. Matchers can use a built-in detector (`sqli`, `xss`, `path_traversal`, or `command_injection`) or a case-insensitive regular expression against `any`, `method`, `path`, `query`, `headers`, or `body`.
+
+```json
+{"field":"query","builtin":"sqli"}
+```
+
+Use the authenticated import/export workflow to move reviewed rule sets between environments. Preserve a backup of the exported rules before an import, and use feedback labels to distinguish expected test traffic from false positives and confirmed abuse. Do not treat a label as proof that a rule is safe to block globally.
+
+**Verify:** add a monitor-only test rule, send a harmless request that intentionally matches it in a non-production environment, and confirm the matching rule/category appears in security feedback without changing the response. Promote one rule at a time to block only after reviewing that evidence.
+
+## Apply IP policy
+
+An IP security rule matches a valid IPv4 or IPv6 CIDR. The most specific matching CIDR wins. Rules can carry a score and an optional country code field for operational classification; country metadata does not replace a verified network control. An explicit `allow` rule is useful for a narrowly scoped exception, but keep it smaller than a broad block whenever possible.
+
+**Verify:** start with a monitor rule for a documentation CIDR such as `198.51.100.0/24`, then test from a controlled address or approved test harness. After changing the action to block, the matching request should receive `403`; an address outside the CIDR should retain normal routing.
+
+## Safe rollout
+
+Keep a rollback path: export the current rules, stage monitor mode, review feedback and analytics, and define an owner and expiry for every exception. Blocking affects both TCP and HTTP/3 traffic. Avoid broad country- or network-based rules unless their false-positive impact is understood.
+
+**Verify:** after every rollout, send a known-good application request and a controlled matching request. Record the normal result and the expected `403` separately before expanding the rule scope.

@@ -1,0 +1,52 @@
+---
+sidebar_position: 1
+---
+
+# Development setup
+
+These instructions describe [`rizalord/bearust@c8ed147`](https://github.com/rizalord/bearust/tree/c8ed147cd84efc71bda8b8473486906b5616a505). The supported zero-prerequisite path is Docker Compose; native development needs Rust **1.97.1**, Cargo, clang, cmake, make, perl, pkg-config, and Node **22** for the dashboard. The Rust toolchain is pinned in [`rust-toolchain.toml`](https://github.com/rizalord/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/rust-toolchain.toml).
+
+## Start the development stack
+
+```sh
+docker compose -f docker-compose.dev.yml up --build
+```
+
+This starts `bearust` with `cargo watch` and the API-backed Vite frontend with hot reload. It publishes the data plane on `8080`, the control plane on loopback-only `127.0.0.1:8081`, and Vite on `5183`. Browser `/api` calls at `http://localhost:5183` are proxied to `http://bearust:8081` inside Compose. The default development setup token is `bearust-dev-setup`; override it through `BEARUST_SETUP_TOKEN` rather than using it outside development.
+
+The dev stack keeps data/TLS, Cargo registry/git/target, and frontend npm caches in named volumes. Stop it with `docker compose -f docker-compose.dev.yml down`; `down -v` also discards those development volumes.
+
+## Native backend and frontend loops
+
+From the source repository root:
+
+```sh
+cargo run -- serve --config config/bearust.example.toml
+cargo test --locked
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
+```
+
+The example configuration binds the data plane to `0.0.0.0:8080` and the control plane to `0.0.0.0:8081`. Run the UI separately with one of these commands:
+
+```sh
+npm --prefix frontend run dev:api
+npm --prefix frontend run dev:demo
+npm --prefix frontend test
+```
+
+`dev:api` uses Vite's API proxy target (default `http://localhost:8081`); `dev:demo` sets Vite demo mode. Vite uses strict port `5183` in both modes. See [`DEVELOPMENT.md`](https://github.com/rizalord/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/DEVELOPMENT.md) and [`frontend/vite.config.ts`](https://github.com/rizalord/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/frontend/vite.config.ts).
+
+## Production Compose smoke prerequisites
+
+The production image builds the frontend with Node 22 and the server with Rust 1.97.1. A Docker/Compose-capable host is therefore enough to smoke the production path:
+
+```sh
+docker compose config
+docker build -t bearust:test .
+docker run --rm bearust:test --version
+docker compose up --build
+```
+
+Production Compose exposes `8080` and publishes the management listener only as `127.0.0.1:8081`. Its SQLite data and TLS material use `bearust-data` and `bearust-tls` volumes. PostgreSQL 16 and MySQL 8.4 are opt-in Compose profiles; set `DATABASE_URL` to the selected backend and keep a backup/restore plan before changing a production database URL.
+
