@@ -98,7 +98,7 @@ const sidebars: SidebarsConfig = {
         'contributing/documentation',
       ],
     },
-    {type: 'category', label: 'Roadmap', link: {type: 'doc', id: 'intro'}, items: []},
+    {type: 'category', label: 'Roadmap', link: {type: 'doc', id: 'roadmap'}, items: []},
   ],
 };
 

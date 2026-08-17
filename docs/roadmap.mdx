@@ -1,0 +1,64 @@
+---
+sidebar_position: 1
+---
+
+# Roadmap
+
+This page lists functionality the BeaRust project has scoped or discussed but has **not** shipped in the documented source boundary. Nothing on this page is available today. Do not configure, script, or operate against anything listed here; see [Feature status](./introduction/feature-status) for what is actually available now.
+
+Every item below is sourced from `docs/PRD.md` in the BeaRust source repository, where it is explicitly described as deferred, future work, or out of scope for the phase that shipped alongside it.
+
+## Plugin system
+
+- **GUI surface for plugin trust state, key rotation, and revocation.** Plugin signing and trust-on-first-use pinning exist today, but there is no dashboard view for trust status, no automatic key rotation, and no centralized revocation list. An operator who needs to replace a pinned key must edit or remove the local `trusted-keys.json` entry directly.
+- **Plugin registry browsing/installing from the GUI.** `bearust plugin search` and `bearust plugin install` are CLI-only. There is no in-dashboard registry browser.
+- **Plugin upgrade/version-management commands.** Installing a plugin is supported; there is no dedicated command for upgrading an already-installed plugin to a newer version.
+- **A `bearust plugin publish` command.** Contributing an entry to the community plugin index is a pull request against the index repository, not a CLI action.
+- **Per-pool plugin assignment for custom load balancing.** Exactly one active `balance.select` plugin serves the whole proxy; a plugin branches its own logic per pool if it needs to.
+- **Response header transform, chunked/streaming body transform, and compressed-body transform plugin hooks.** The current response-transform hook covers only a fully buffered, non-compressed response body.
+- **Runtime bypass for trusted crawlers based on request headers.** Trusted-crawler configuration can be managed today, but automatic bypass is deferred until a cryptographically signed ingress marker exists; no unsigned `Host`, `User-Agent`, or client header is trusted for this purpose.
+
+## Access control and audit
+
+- **Audit log export.**
+- **Delegated role administration.**
+- **External identity providers / SSO.**
+- **Event replay after a realtime (SSE) disconnect.** Reconnects resume live delivery; events missed during the disconnect window are not replayed.
+- **A general-purpose authorization policy language.** Per-resource scoping is limited to the proxy-host read/write scopes that exist today.
+- **Per-certificate or per-upstream RBAC scopes.**
+
+## Security policy
+
+- **CAPTCHA provider integrations** for the bot-challenge flow.
+- **Automatic feedback-driven WAF rule retraining.** The false-positive feedback intake persists analyst feedback; it does not yet retrain or auto-tune rules.
+- **Advanced OWASP CRS rule-set parity and automatic signature rule updates.**
+- **Distributed WAF rule synchronization** beyond the existing cluster config-sync path.
+
+## Analytics and observability
+
+- **Long-term hourly/daily rollups** beyond the existing bounded retention window.
+- **Redis-backed or cross-node metric aggregation.**
+- **Per-route (as opposed to per-host) analytics dimensions.**
+- **Alerting integrations** driven from analytics or anomaly data.
+- **Cross-node analytics replay.**
+
+## Database and clustering
+
+- **Database export/import tooling**, read replicas, and database-level clustering or replication beyond the supported `DATABASE_URL` backends.
+- **Backup automation** and **online migration orchestration**. Backups today are manual (`sqlite3 .backup`, `pg_dump`).
+- **Cross-node database coordination** beyond Raft-based configuration sync.
+
+## Protocol and networking
+
+- **Upstream HTTP/3.** BeaRust's HTTP/3 listener accepts client connections over QUIC and forwards every request to backends over HTTP/1.1/HTTP/2, unconditionally. Forwarding to backends over HTTP/3 was investigated and is a deliberate, permanent non-goal (an unstable `reqwest` feature flag and a conflicting TLS-backend requirement), not a deferred increment.
+- **Non-HTTP protocol proxying** (raw TCP/UDP) beyond WebSocket passthrough.
+- **A global CDN or edge-caching network.** BeaRust is a near-origin proxy, not a CDN replacement.
+- **A native mobile management application.** The management surface is the responsive web GUI only.
+
+## Localization
+
+- **Additional UI locales beyond English, Indonesian, and Japanese.** The i18n framework is designed to accept community-contributed catalogs, but no further locale is active today.
+
+---
+
+Roadmap scope changes when the source repository ships an increment; this page is not updated speculatively ahead of an actual merge. If something you need is not listed here and not documented as available in [Feature status](./introduction/feature-status), treat it as unimplemented until a source-verified page says otherwise.
