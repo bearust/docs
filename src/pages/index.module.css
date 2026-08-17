@@ -1,23 +1,22 @@
-/**
- * CSS files with the .module.css suffix will be treated as CSS modules
- * and scoped locally.
- */
-
-.heroBanner {
-  padding: 4rem 0;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-}
-
-@media screen and (max-width: 996px) {
-  .heroBanner {
-    padding: 2rem;
-  }
-}
-
-.buttons {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+.hero { background: radial-gradient(circle at 82% 10%, rgba(229, 167, 26, 0.2), transparent 28rem), #10130f; color: #fffaf0; padding: clamp(4rem, 10vw, 8rem) 1.5rem; }
+.heroInner, .paths, .referenceBand { margin: 0 auto; max-width: 72rem; }
+.heroInner { align-items: center; display: flex; gap: clamp(2rem, 6vw, 5rem); }
+.mark { flex: 0 0 auto; height: clamp(6.5rem, 14vw, 10rem); width: clamp(6.5rem, 14vw, 10rem); }
+.hero h1 { color: inherit; font-size: clamp(2.5rem, 6vw, 4.75rem); letter-spacing: -0.035em; line-height: 1.05; margin-bottom: 1.25rem; max-width: 14ch; }
+.lede { color: #e6dece; font-size: 1.2rem; line-height: 1.7; margin: 0; max-width: 58ch; }
+.primaryActions { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 2rem; }
+.paths { padding: clamp(3.5rem, 7vw, 6rem) 1.5rem; }
+.sectionHeading { max-width: 48rem; }
+.sectionHeading h2 { font-size: clamp(1.9rem, 4vw, 3rem); letter-spacing: -0.03em; margin-bottom: 0.75rem; }
+.sectionHeading p, .pathCard p { color: var(--ifm-color-emphasis-700); line-height: 1.65; }
+.sectionHeading p { font-size: 1.08rem; }
+.pathGrid { display: grid; gap: 1rem; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 2.25rem; }
+.pathCard { border: 1px solid var(--ifm-color-emphasis-300); border-radius: 14px; color: inherit; display: block; min-height: 15rem; padding: 1.75rem; text-decoration: none; transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease; }
+.pathCard:hover { border-color: var(--ifm-color-primary); box-shadow: 0 14px 30px rgba(59, 43, 7, 0.12); color: inherit; text-decoration: none; transform: translateY(-3px); }
+.pathCard h3 { font-size: 1.35rem; margin: 0.6rem 0; }
+.pathCard p { margin: 0; }
+.cardLabel { color: var(--ifm-color-primary-darkest); font-size: 0.8rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+.referenceBand { align-items: center; border-top: 1px solid var(--ifm-color-emphasis-300); display: flex; justify-content: space-between; padding: 2.5rem 1.5rem 3rem; }
+.referenceBand p { font-size: 1.05rem; font-weight: 600; margin: 0; }
+.referenceBand div { display: flex; gap: 1.5rem; }
+@media screen and (max-width: 768px) { .heroInner, .referenceBand { align-items: flex-start; flex-direction: column; } .mark { height: 5rem; width: 5rem; } .pathGrid { grid-template-columns: 1fr; } .pathCard { min-height: auto; } .referenceBand { gap: 1rem; } }

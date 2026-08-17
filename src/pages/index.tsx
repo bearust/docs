@@ -1,43 +1,67 @@
 import type {ReactNode} from 'react';
-import clsx from 'clsx';
 import Link from '@docusaurus/Link';
-import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
-import HomepageFeatures from '@site/src/components/HomepageFeatures';
 import Heading from '@theme/Heading';
 
 import styles from './index.module.css';
 
-function HomepageHeader() {
-  const {siteConfig} = useDocusaurusContext();
-  return (
-    <header className={clsx('hero hero--primary', styles.heroBanner)}>
-      <div className="container">
-        <Heading as="h1" className="hero__title">
-          {siteConfig.title}
-        </Heading>
-        <p className="hero__subtitle">{siteConfig.tagline}</p>
-        <div className={styles.buttons}>
-          <Link
-            className="button button--secondary button--lg"
-            to="/docs/intro">
-            Docusaurus Tutorial - 5min ⏱️
-          </Link>
-        </div>
-      </div>
-    </header>
-  );
-}
-
 export default function Home(): ReactNode {
-  const {siteConfig} = useDocusaurusContext();
   return (
     <Layout
-      title={`Hello from ${siteConfig.title}`}
-      description="Description will go into a meta tag in <head />">
-      <HomepageHeader />
+      title="Documentation"
+      description="Documentation for the BeaRust reverse proxy and load balancer.">
       <main>
-        <HomepageFeatures />
+        <section className={styles.hero}>
+          <div className={styles.heroInner}>
+            <img className={styles.mark} src="img/logo.svg" alt="" />
+            <div>
+              <Heading as="h1">A safer path from request to upstream.</Heading>
+              <p className={styles.lede}>
+                BeaRust is a configuration-driven reverse proxy and load balancer
+                for teams that need clear routing, operational control, and a
+                dependable edge for application traffic.
+              </p>
+              <div className={styles.primaryActions}>
+                <Link className="button button--primary button--lg" to="/docs/intro">
+                  Read the introduction
+                </Link>
+                <a className="button button--outline button--lg" href="https://github.com/rizalord/bearust">
+                  View source
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section className={styles.paths} aria-label="Documentation paths">
+          <div className={styles.sectionHeading}>
+            <Heading as="h2">Start with the work in front of you.</Heading>
+            <p>Choose a focused path, then follow the reference when you need the details.</p>
+          </div>
+          <div className={styles.pathGrid}>
+            <Link className={styles.pathCard} to="/docs/intro">
+              <span className={styles.cardLabel}>Deploy</span>
+              <Heading as="h3">Install BeaRust</Heading>
+              <p>Bring up the production-ready Docker Compose stack and verify its health.</p>
+            </Link>
+            <Link className={styles.pathCard} to="/docs/intro">
+              <span className={styles.cardLabel}>Route traffic</span>
+              <Heading as="h3">Configure a first proxy</Heading>
+              <p>Connect a host and upstream, then validate the request path end to end.</p>
+            </Link>
+            <Link className={styles.pathCard} to="/docs/intro">
+              <span className={styles.cardLabel}>Build with us</span>
+              <Heading as="h3">Contribute to BeaRust</Heading>
+              <p>Understand the runtime, control plane, and contributor workflow.</p>
+            </Link>
+          </div>
+        </section>
+        <section className={styles.referenceBand}>
+          <p>Looking for a specific contract?</p>
+          <div>
+            <Link to="/docs/intro">Browse the API reference</Link>
+            <Link to="/docs/intro">Explore configuration</Link>
+          </div>
+        </section>
       </main>
     </Layout>
   );

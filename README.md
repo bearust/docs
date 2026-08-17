@@ -1,43 +1,35 @@
-# Website
+# BeaRust documentation
 
-This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
+This repository contains the English-first documentation site for [BeaRust](https://github.com/rizalord/bearust), a configuration-driven reverse proxy and load balancer. The BeaRust application source lives at `/home/rizalord/Projects/personal/bearust`; keep application changes and documentation changes in their respective repositories.
 
-## Installation
+## Requirements
 
-```bash
+- Node.js `>=20`
+- npm
+
+## Local development
+
+Install dependencies, then run the development server:
+
+```sh
 npm install
-```
-
-**Note**: feel free to use the package manager of your choice.
-
-## Local Development
-
-```bash
 npm run start
 ```
 
-This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
+The site uses `DOCS_SITE_URL` and `DOCS_BASE_URL` when deploying behind a reverse proxy. Their development-safe defaults are `http://localhost:3000` and `/`.
 
-## Build
+## Checks and production build
 
-```bash
+Run these before handing off documentation changes:
+
+```sh
+npm run typecheck
+npm run validate:docs
 npm run build
 ```
 
-This command generates static content into the `build` directory and can be served using any static contents hosting service.
+`validate:docs` is added as the documentation corpus is completed. `npm run build` generates the static site in `build/`.
 
-## Deployment
+## Translation workflow
 
-Using SSH:
-
-```bash
-USE_SSH=true npm run deploy
-```
-
-Not using SSH:
-
-```bash
-GIT_USER=<Your GitHub username> npm run deploy
-```
-
-If you are using GitHub Pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.
+English (`en`) is the only active site locale. Write and review English content first. Add Indonesian or Japanese only when a complete translated content set and its localized navigation are ready; do not enable a partial locale.
