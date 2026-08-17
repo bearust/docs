@@ -24,10 +24,11 @@ Run these before handing off documentation changes:
 
 ```sh
 npm run typecheck
+npm run validate:docs
 npm run build
 ```
 
-Task 9 adds the documentation validator and its `npm run validate:docs` command. `npm run build` generates the static site in `build/`.
+`npm run validate:docs` checks the public `docs/` corpus for starter content, unfinished-content markers, required pages, and route coverage against the sibling BeaRust source repository's control-plane router (set `BEARUST_SOURCE_DIR` if that repository is not a sibling of this checkout). `npm run build` generates the static site in `build/`.
 
 ## Translation workflow
 
