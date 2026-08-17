@@ -4,6 +4,10 @@
 
 Completed. Task 3 adds the operational-guide slice of the English-first BeaRust documentation site. All edits were made in the requested isolated worktree only.
 
+### Fix round 1
+
+Corrected `docs/operate/rate-limiting.mdx` after review: block-mode `429` responses expose only `Retry-After` and `Cache-Control: no-store`. `remaining_tokens` is part of BeaRust's `RateLimitDecision` telemetry/internal state and is not a client response header.
+
 ## Changed files
 
 - `docs/operate/proxy-hosts-and-load-balancing.mdx` — host/path routing, pools, health, timeouts, retry behavior, and native versus control-plane ownership.
@@ -13,6 +17,7 @@ Completed. Task 3 adds the operational-guide slice of the English-first BeaRust 
 - `docs/operate/waf-and-ip-security.mdx` — WAF/IP modes, matcher JSON, import/export, feedback labels, CIDR policy, and monitor-first rollout.
 - `docs/operate/bot-protection.mdx` — modes, scoring, TTL, challenge/clearance behavior, cache safety, and trusted-crawler caveat.
 - `docs/operate/rate-limiting.mdx` — token buckets, scopes, trusted proxies, `429` behavior, and live per-host policy updates.
+- `.superpowers/sdd/2026-08-17-bearust-documentation-site/task-3-report.md` — records Fix round 1 and its verification evidence.
 - `docs/operate/analytics-and-observability.mdx` — bounded analytics, warm-up, acknowledgements, JSON logs/request IDs/realtime, and Prometheus boundaries.
 - `sidebars.ts` — adds the completed operations category and its eight pages.
 - `docs/intro.mdx` — adds an operations entry point on the homepage.
@@ -29,6 +34,7 @@ Completed. Task 3 adds the operational-guide slice of the English-first BeaRust 
 - `git diff --check` — passed with no whitespace errors before the documentation commit.
 - Per-page check: every `docs/operate/*.mdx` file contains at least one `**Verify:**` observable outcome.
 - API-reference scope check: no API/reference pages were added or duplicated.
+- Fix round 1 source check: `src/proxy.rs` constructs the blocking `429` with `Retry-After` and `Cache-Control: no-store`; `src/rate_limit.rs` defines `remaining_tokens` on the internal `RateLimitDecision` enum.
 
 `npm run validate:docs` was not run because it is intentionally deferred to Task 9: the current `package.json` has no `validate:docs` script, and the repository README says Task 9 adds it.
 
@@ -50,6 +56,8 @@ Completed. Task 3 adds the operational-guide slice of the English-first BeaRust 
 - `/home/rizalord/Projects/personal/bearust/src/bot_protection.rs`
 - `/home/rizalord/Projects/personal/bearust/src/rate_limit.rs`
 - `/home/rizalord/Projects/personal/bearust/src/rate_limit_store.rs`
+- `/home/rizalord/Projects/personal/bearust/src/proxy.rs` (block-mode `429` response construction, around lines 1397/1405)
+- `/home/rizalord/Projects/personal/bearust/src/rate_limit.rs` (`RateLimitDecision::Limited`, around line 98)
 - `/home/rizalord/Projects/personal/bearust/src/analytics.rs`
 - `/home/rizalord/Projects/personal/bearust/src/analytics_prometheus.rs`
 - `/home/rizalord/Projects/personal/bearust/docs/acme.md`

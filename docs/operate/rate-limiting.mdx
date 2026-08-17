@@ -10,9 +10,9 @@ BeaRust uses a token bucket per policy key. `capacity` is the initial burst and 
 
 Set `enabled`, `action`, `capacity`, `refill_per_second`, and `key_scope` through the host policy workflow. `proxy_host_ip` shares a bucket for one client IP on one proxy host. `proxy_host_path_ip` further separates buckets by request path, which can protect a sensitive endpoint but creates more buckets and can dilute a host-wide limit.
 
-Use monitor mode first. A limited monitor-mode request is observed but is not rejected. In block mode, a depleted bucket receives `429 Too Many Requests` with rate-limit response headers, including the remaining token count and retry interval.
+Use monitor mode first. A limited monitor-mode request is observed but is not rejected. In block mode, a depleted bucket receives `429 Too Many Requests` with `Retry-After` and `Cache-Control: no-store` response headers. The remaining-token value is retained for BeaRust telemetry and internal decisions, not returned as a client response header.
 
-**Verify:** apply a deliberately small policy such as capacity `2` and refill `1` per second to a non-production host. In monitor mode, make three quick requests and confirm the third is recorded as limited while it still reaches the upstream. Change only the action to block; the third request should return `429` and expose retry/remaining headers.
+**Verify:** apply a deliberately small policy such as capacity `2` and refill `1` per second to a non-production host. In monitor mode, make three quick requests and confirm the third is recorded as limited while it still reaches the upstream. Change only the action to block; the third request should return `429` with `Retry-After` and `Cache-Control: no-store`.
 
 ## Resolve the client IP safely
 
