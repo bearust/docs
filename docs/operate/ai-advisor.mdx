@@ -1,0 +1,39 @@
+---
+sidebar_position: 12
+---
+
+# AI Advisor
+
+AI Advisor is optional. When its provider configuration is absent or invalid, the advisor is disabled; proxy traffic continues without it. Provider outages, full queues, timeouts, invalid responses, and an open circuit are recorded as advisor job failures, never as a reason to block data-plane requests.
+
+## Configure an OpenAI-compatible provider
+
+Set `LLM_API_URL` and `LLM_API_KEY` to enable the provider. `LLM_MODEL` is optional. The endpoint must be OpenAI-compatible with the chat-completions request/response shape; BeaRust normalizes a configured base URL to its `/v1/chat/completions` endpoint.
+
+```sh
+LLM_API_URL='https://llm.example.test'
+LLM_API_KEY='<provider-api-key>'
+LLM_MODEL='approved-model-name'
+```
+
+Do not put a real key in a configuration file, shell history, ticket, or generated documentation. Provide it through your deployment's secret mechanism. The provider configuration redacts the key from diagnostic output, and provider requests redact sensitive values before they leave the service. Redaction reduces exposure; it is not permission to send data your organization is not allowed to process. Review your provider, retention, residency, and network-egress requirements before enabling the feature.
+
+Optional controls bound behavior: `LLM_REQUEST_TIMEOUT_SECONDS`, `LLM_RESPONSE_LIMIT_BYTES`, `LLM_QUEUE_CAPACITY`, `LLM_WORKER_COUNT`, and `LLM_CIRCUIT_FAILURE_THRESHOLD`. The queue and worker concurrency are bounded, requests time out, response sizes are limited, and the circuit opens after configured provider failures before cooling down. These controls protect BeaRust resources; they do not guarantee provider availability or response quality.
+
+**Verify:** deploy a test-only key, check that advisor status is enabled, submit a harmless request, and inspect logs/diagnostics to confirm the key is redacted. Temporarily point a test deployment at an unreachable provider and confirm the job fails with an advisor error while a normal proxied request still completes.
+
+## Request and monitor asynchronous work
+
+The advisor works asynchronously. Supported workflows are incident explanation, security summary, rule tuning, and configuration draft. Jobs move through `queued`, `running`, and a terminal state such as `completed`, `failed`, `approved`, `rejected`, or `expired`. A failure can expose a safe code including `advisor_busy`, `advisor_timeout`, `advisor_provider_unavailable`, `advisor_invalid_response`, `advisor_response_too_large`, or `advisor_circuit_open`; use those codes for remediation without treating provider text as trusted control-plane input.
+
+Use incident and security workflows as decision support. Rule tuning is read-only. A configuration draft proposes a constrained change but does not apply it itself.
+
+**Verify:** submit one harmless request for each workflow available to the test role, observe it transition from queued/running to a terminal state, and confirm that a provider failure does not change live proxy routing or security configuration.
+
+## Review drafts before any change
+
+Only a user with AI-draft approval authority can approve or reject a completed configuration draft. Approval checks that the draft is still active and that the configuration it was based on has not become stale. Expired drafts and stale drafts are rejected with safe advisor errors; create a fresh analysis instead of forcing an old recommendation through.
+
+Treat every generated summary and draft as untrusted operational advice. Review its inputs, expected effect, and current configuration, then either approve it deliberately or reject it. Record the decision through the control plane so it is auditable.
+
+**Verify:** create a configuration draft in a test environment, change the relevant configuration before approval, and confirm the stale draft cannot be applied. Create another draft, reject it, and confirm its terminal state is `rejected` with no configuration change.

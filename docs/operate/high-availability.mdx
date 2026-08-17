@@ -1,0 +1,43 @@
+---
+sidebar_position: 10
+---
+
+# High availability and clustering
+
+Clustering is optional. With no configured peers, BeaRust operates as a standalone node; cluster status reports clustering as disabled and standalone configuration does not require peer credentials. Configure peers only when you are deliberately operating a Raft-backed control-plane cluster.
+
+## Configure each node deliberately
+
+Give every node a unique `NODE_ID`. Configure the same peer set through `CLUSTER_PEERS`, and use one shared, high-entropy `CLUSTER_AUTH_TOKEN` for the peer transport. Environment values override the corresponding cluster configuration values. Keep the token in a secret manager or deployment-secret mechanism; never commit or paste a real token into configuration examples.
+
+```sh
+NODE_ID=node-a
+CLUSTER_PEERS='node-b=10.0.0.12:7000,node-c=10.0.0.13:7000'
+CLUSTER_AUTH_TOKEN='<cluster-shared-secret>'
+```
+
+Peer RPC transport authenticates messages with the configured cluster token. This authenticates the BeaRust peer protocol; it does not design your network perimeter for you. Restrict the cluster listener to the private network, firewall it from untrusted clients, rotate the shared token through a coordinated deployment, and protect the token as a cluster-wide credential.
+
+**Verify:** start a node with the intended identity and peers, inspect cluster status, and confirm the local node ID and expected peer count. A peer using a different token must not be accepted as an authenticated cluster peer.
+
+## Read status before changing configuration
+
+For a configured cluster, use the Raft role, leader ID, term, commit index, peer health, quorum flag, and sync state as the readiness signal. A leader is ready only with a recent quorum acknowledgement and a healthy Raft runtime. A follower knowing a leader is not by itself proof of local quorum readiness, so do not route a critical configuration operation solely because a follower reports a leader ID.
+
+When status reports `quorum_unavailable`, `unavailable`, or a stopped/unknown state, restore quorum before relying on a replicated configuration change. A standalone node reports its own in-sync state rather than a peer quorum.
+
+**Verify:** while all configured peers are healthy, confirm one leader and a quorum-ready status. Then isolate enough peers in a non-production environment to lose quorum and confirm status stops reporting quorum readiness; restore connectivity and wait for a current leader and commit progress.
+
+## Treat replicated writes as commands
+
+Clustered configuration mutations are replicated Raft commands. Submit a stable command ID for a configuration write and retain it until its final result is known. If the client loses the response after submission, retry the *same* command ID rather than creating a new command: this lets the cluster identify a retried outcome without repeating the intended mutation.
+
+Wait for the command to commit, then verify the resulting configuration from a quorum-ready cluster view. A transport timeout is not evidence that the command failed; it is an unknown outcome until status or a retry with the same command ID resolves it.
+
+**Verify:** in a test cluster, interrupt a client after submitting a harmless configuration command, retry it with the original command ID, and confirm the intended change appears once after commit.
+
+## Keep virtual IP failover separate
+
+Keepalived, VRRP, floating IPs, and load-balancer health checks are host-level availability mechanisms. BeaRust does not configure or operate keepalived for you. Use your platform's host/network runbook to move client ingress between healthy nodes, and separately validate that the selected node has the cluster readiness required for control-plane writes.
+
+**Verify:** fail over a test virtual IP using the host-level tooling, confirm clients reach the replacement node, and separately inspect its BeaRust cluster status before performing a replicated configuration change.

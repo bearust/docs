@@ -36,6 +36,10 @@ const sidebars: SidebarsConfig = {
         'operate/bot-protection',
         'operate/rate-limiting',
         'operate/analytics-and-observability',
+        'operate/users-roles-and-audit',
+        'operate/high-availability',
+        'operate/wasm-plugins',
+        'operate/ai-advisor',
       ],
     },
     {
