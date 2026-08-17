@@ -14,27 +14,48 @@ CSRF-exempt exception.
 
 ## Route table
 
-| Method | Path | Permission | Success | Implemented errors |
-| --- | --- | --- | --- | --- |
-| `GET`, `PATCH` | `/api/waf/config` | `roles.manage` | `200 WafConfig` | `400 invalid_input` (patch), `401`, `403 forbidden`, `500 database_error` |
-| `GET`, `POST` | `/api/waf/rules` | `roles.manage` | `200 WafRule[]`, `201 WafRule` | `400 invalid_input`, `401`, `403`, `409 conflict`, `500 database_error` |
-| `PATCH`, `DELETE` | `/api/waf/rules/{id}` | `roles.manage` | `200 WafRule`, `204` | `400 invalid_input`, `401`, `403`, `404 not_found`, `409 conflict`, `500 database_error` |
-| `POST` | `/api/waf/rules/import` | `roles.manage` | `200` empty body | `400 invalid_input`, `401`, `403`, `409 conflict`, `500 database_error` |
-| `GET` | `/api/waf/rules/export` | `roles.manage` | `200 application/toml` | `401`, `403`, `500 database_error` |
-| `GET`, `POST` | `/api/waf/feedback` | `roles.manage` | `200 WafFeedback[]`, `201 WafFeedback` | `400 invalid_input`, `401`, `403`, `500 database_error` |
-| `GET`, `POST` | `/api/ip-security/rules` | `roles.manage` | `200 IpSecurityRule[]`, `201 IpSecurityRule` | `400 invalid_input`, `401`, `403`, `500 database_error`, `500 reload_failed` |
-| `PATCH`, `DELETE` | `/api/ip-security/rules/{id}` | `roles.manage` | `200 IpSecurityRule`, `204` | `400 invalid_input`, `401`, `403`, `404 not_found`, `500 database_error`, `500 reload_failed` |
-| `GET`, `PATCH` | `/api/bot/config` | `bot_protection.manage` | `200 BotConfig` | `400 invalid_input`, `401`, `403 forbidden`, `500 database_error` |
-| `GET`, `POST` | `/api/bot/trusted-crawlers` | `bot_protection.manage` | `200 TrustedCrawler[]`, `201 TrustedCrawler` | `400 invalid_input`, `401`, `403`, `500 database_error` |
-| `PATCH`, `DELETE` | `/api/bot/trusted-crawlers/{id}` | `bot_protection.manage` | `200 TrustedCrawler`, `204` | `400 invalid_input`, `401`, `403`, `404 not_found`, `500 database_error` |
-| `POST` | `/api/bot/config/import` | `bot_protection.manage` | `200` empty body | `400 invalid_input`, `401`, `403`, `500 database_error` |
-| `GET` | `/api/bot/config/export` | `bot_protection.manage` | `200 application/toml` | `401`, `403`, `500 database_error` |
-| `POST` | `/api/bot/challenge` | Public; CSRF-exempt | `200 BotChallenge`, `Cache-Control: no-store` | `400 invalid_input`, `503 challenge_failed` |
-| `POST` | `/api/bot/challenge/verify` | Public; CSRF-exempt | `200 {"ok":true}`, clearance cookie, `Cache-Control: no-store` | `400 challenge_failed` |
-| `GET`, `PATCH` | `/api/rate-limit/config` | `system.settings.manage` | `200 RateLimitConfig` | `400 invalid_input`, `401`, `403 forbidden`, `500 database_error` |
+| Method | Path | Permission | Success | Implemented errors | Policy-state outcome |
+| --- | --- | --- | --- | --- | --- |
+| `GET`, `PATCH` | `/api/waf/config` | `roles.manage` | `200 WafConfig` | `400 invalid_input` (patch), `401`, `403 forbidden`, `500 database_error` | `PATCH` [†](#cluster-policy-state-outcomes) |
+| `GET`, `POST` | `/api/waf/rules` | `roles.manage` | `200 WafRule[]`, `201 WafRule` | `400 invalid_input`, `401`, `403`, `409 conflict`, `500 database_error` | `POST` [†](#cluster-policy-state-outcomes) |
+| `PATCH`, `DELETE` | `/api/waf/rules/{id}` | `roles.manage` | `200 WafRule`, `204` | `400 invalid_input`, `401`, `403`, `404 not_found`, `409 conflict`, `500 database_error` | Both [†](#cluster-policy-state-outcomes) |
+| `POST` | `/api/waf/rules/import` | `roles.manage` | `200` empty body | `400 invalid_input`, `401`, `403`, `409 conflict`, `500 database_error` | [†](#cluster-policy-state-outcomes) |
+| `GET` | `/api/waf/rules/export` | `roles.manage` | `200 application/toml` | `401`, `403`, `500 database_error` | — |
+| `GET`, `POST` | `/api/waf/feedback` | `roles.manage` | `200 WafFeedback[]`, `201 WafFeedback` | `400 invalid_input`, `401`, `403`, `500 database_error` | — |
+| `GET`, `POST` | `/api/ip-security/rules` | `roles.manage` | `200 IpSecurityRule[]`, `201 IpSecurityRule` | `400 invalid_input`, `401`, `403`, `500 database_error`, `500 reload_failed` | `POST` [†](#cluster-policy-state-outcomes) |
+| `PATCH`, `DELETE` | `/api/ip-security/rules/{id}` | `roles.manage` | `200 IpSecurityRule`, `204` | `400 invalid_input`, `401`, `403`, `404 not_found`, `500 database_error`, `500 reload_failed` | Both [†](#cluster-policy-state-outcomes) |
+| `GET`, `PATCH` | `/api/bot/config` | `bot_protection.manage` | `200 BotConfig` | `400 invalid_input`, `401`, `403 forbidden`, `500 database_error` | `PATCH` [†](#cluster-policy-state-outcomes) |
+| `GET`, `POST` | `/api/bot/trusted-crawlers` | `bot_protection.manage` | `200 TrustedCrawler[]`, `201 TrustedCrawler` | `400 invalid_input`, `401`, `403`, `500 database_error` | `POST` [†](#cluster-policy-state-outcomes) |
+| `PATCH`, `DELETE` | `/api/bot/trusted-crawlers/{id}` | `bot_protection.manage` | `200 TrustedCrawler`, `204` | `400 invalid_input`, `401`, `403`, `404 not_found`, `500 database_error` | Both [†](#cluster-policy-state-outcomes) |
+| `POST` | `/api/bot/config/import` | `bot_protection.manage` | `200` empty body | `400 invalid_input`, `401`, `403`, `500 database_error` | [†](#cluster-policy-state-outcomes) |
+| `GET` | `/api/bot/config/export` | `bot_protection.manage` | `200 application/toml` | `401`, `403`, `500 database_error` | — |
+| `POST` | `/api/bot/challenge` | Public; CSRF-exempt | `200 BotChallenge`, `Cache-Control: no-store` | `400 invalid_input`, `503 challenge_failed` | — |
+| `POST` | `/api/bot/challenge/verify` | Public; CSRF-exempt | `200 {"ok":true}`, clearance cookie, `Cache-Control: no-store` | `400 challenge_failed` | — |
+| `GET`, `PATCH` | `/api/rate-limit/config` | `system.settings.manage` | `200 RateLimitConfig` | `400 invalid_input`, `401`, `403 forbidden`, `500 database_error` | `PATCH` [†](#cluster-policy-state-outcomes) |
 
-`204 No Content` has no JSON body. JSON bodies reject unknown fields. The
-router's 3 MiB body cap applies unless a route below has a smaller cap.
+`204 No Content` has no JSON body. JSON request objects reject unknown fields
+except that a WAF rule's `matcher` is intentionally accepted as an unconstrained
+JSON value and is validated later by the WAF compiler. The router's 3 MiB body
+cap applies unless a route below has a smaller cap.
+
+## Cluster policy-state outcomes
+
+The [†](#route-table) mutations submit the complete non-secret policy snapshot
+after their local persistence and runtime-reload work. In a clustered setup,
+each marked mutation can therefore return these additional shared envelopes:
+
+| Status | Code | Meaning |
+| --- | --- | --- |
+| `202` | `local_apply_pending` | The configuration is committed, but local application is pending. |
+| `503` | `cluster_leader_unknown`, `cluster_quorum_unavailable`, `cluster_unavailable`, or `cluster_commit_outcome_unknown` | The configuration gateway cannot establish the documented successful commit state. |
+| `504` | `cluster_forward_timeout` | Forwarding the cluster write timed out. |
+
+The normal success audit entry and resource realtime event are emitted only
+after this policy-state submission succeeds. Because the handler reaches that
+submission after the local update, a policy-state response does not undo the
+prior local persistence or runtime change. For `202`, and especially for
+`503 cluster_commit_outcome_unknown` or `504`, reread the resource before
+retrying rather than assuming the mutation failed.
 
 ## WAF configuration, rules, and feedback
 
@@ -46,11 +67,16 @@ Persistence or reload errors share the safe `500 database_error` response.
 Create a custom rule with `name`, `category`, `severity`, optional `action`,
 and `matcher`. `name` is trimmed, non-empty, and at most 128 bytes;
 `category` is at most 64 bytes; `severity` is at most 16 bytes. `action` is
-`inherit`, `allow`, `log`, or `block` (default `inherit`). A matcher has
-`field` (`any`, `method`, `path`, `query`, `headers`, or `body`) and exactly a
-usable `builtin` (`sqli`, `xss`, `path_traversal`, or `command_injection`) or
-regex `pattern` (at most 2,048 bytes). The pattern is compiled case
-insensitively. Responses contain `matcher_json`, not a parsed matcher.
+`inherit`, `allow`, `log`, or `block` (default `inherit`). The `matcher` value
+is stored as JSON and then parsed by the WAF compiler. Use only its supported
+members: optional `field` (`any`, `method`, `path`, `query`, `headers`, or
+`body`; default `any`), plus a `builtin` (`sqli`, `xss`, `path_traversal`, or
+`command_injection`) or a regex `pattern` (at most 2,048 bytes). Unknown
+matcher members are ignored. If `builtin` is present it must be valid and takes
+precedence over `pattern`, even when that pattern is valid; the compiler uses a
+pattern only when `builtin` is absent. A matcher without either member is
+rejected. Patterns are compiled case-insensitively.
+Responses contain `matcher_json`, not a parsed matcher.
 
 ```json
 {
@@ -110,10 +136,12 @@ activation is `500 reload_failed`. Do not treat a reload failure as a success.
 ## Bot policy and trusted crawlers
 
 `BotConfig` returns `mode`, `threshold`, `ttl_seconds`, and `updated_at`; it
-never exposes the fingerprint key. Modes are `monitor`, `challenge`, and
-`block`. Patch any subset of `mode`, `threshold`, and `ttl_seconds`: threshold
-must be 1--100 and TTL must be 1--86,400 seconds. A successful patch reloads
-the policy, commits it, records `bot_config_updated`, and emits `bot.changed`.
+never exposes the fingerprint key. Canonical output modes are `monitor`,
+`challenge`, and `block`. PATCH and TOML import also accept `monitor-only` as
+an input alias for canonical `monitor`; `challenge` and `block` are unchanged.
+Patch any subset of `mode`, `threshold`, and `ttl_seconds`: threshold must be
+1--100 and TTL must be 1--86,400 seconds. A successful patch reloads the
+policy, commits it, records `bot_config_updated`, and emits `bot.changed`.
 
 Trusted crawler objects have `id`, `category: "trusted_crawler"`, `weight: 0`,
 `trusted_user_agent`, `trusted_domain`, and `enabled`. Create and patch require

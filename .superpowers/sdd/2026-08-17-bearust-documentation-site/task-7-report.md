@@ -104,3 +104,37 @@ operations.
   matching rather than a new validator.
 - No separate review-agent capability is available in this environment; the
   source/model/test cross-check and final diff review were completed inline.
+
+## Fix round 1
+
+Reviewer findings were verified against the checked-in handlers before the
+following focused corrections:
+
+- Added explicit cluster policy-state outcome coverage to every applicable
+  security mutation and to analytics retention, tuning-policy, and
+  emergency-disable writes. The pages now distinguish `202 local_apply_pending`,
+  the mapped `503` cluster codes, and `504 cluster_forward_timeout`, and state
+  that normal success audit/realtime publication occurs only after policy-state
+  submission succeeds.
+- Corrected analytics `limit`: all three query handlers validate it, but only
+  timeseries applies it; summary and dimensions aggregate all matching buckets.
+- Corrected WAF matcher parsing: the matcher remains unconstrained JSON at the
+  request boundary, unknown matcher members are ignored by the compiler, and
+  `builtin` wins when supplied with `pattern`.
+- Added `applied_at` and `previous_config_json` to the recommendation response
+  contract.
+- Documented `monitor-only` as an accepted bot configuration PATCH/TOML-import
+  alias with canonical `monitor` output.
+
+Fix-round verification results:
+
+- Source handler and domain-model inspection confirmed the shared
+  `submit_policy_state` path, the analytics application boundary for `limit`,
+  WAF matcher precedence, recommendation fields, and bot-mode alias.
+- Documentation-content checks confirmed every marked security mutation, the
+  analytics policy-state outcomes, the corrected `limit` text, both returned
+  recommendation fields, and the bot alias.
+- `npm run typecheck` passed.
+- `npm run build` passed; Node emitted only its localStorage experimental
+  warning.
+- `git diff --check` passed.

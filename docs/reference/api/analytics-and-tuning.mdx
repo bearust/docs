@@ -17,28 +17,45 @@ present. All writes below require CSRF.
 | `GET` | `/api/analytics/summary` | `proxy_hosts.read`; global or queried host | `200 AnalyticsSummary` | `400 invalid_input`, `401`, `403 forbidden` |
 | `GET` | `/api/analytics/timeseries` | Same | `200 AnalyticsBucket[]` | `400 invalid_input`, `401`, `403` |
 | `GET` | `/api/analytics/dimensions` | Same | `200 AnalyticsDimensions` | `400 invalid_input`, `401`, `403` |
-| `GET`, `PATCH` | `/api/analytics/retention` | GET `proxy_hosts.read` global; PATCH `roles.manage` | `200 AnalyticsRetentionConfig` | `400 invalid_input`, `401`, `403`, `500 database_error` |
+| `GET`, `PATCH` | `/api/analytics/retention` | GET `proxy_hosts.read` global; PATCH `roles.manage` | `200 AnalyticsRetentionConfig` | `400 invalid_input`, `401`, `403`, `500 database_error`; PATCH also has [†](#policy-state-cluster-outcomes) |
 | `GET` | `/api/analytics/baseline` | `proxy_hosts.read`; global or queried host | `200 BaselineSnapshot` | `400 invalid_input`, `401`, `403` |
 | `GET` | `/api/analytics/anomalies` | `proxy_hosts.read`; global or queried host | `200 AnomalyRecord[]` | `401`, `403` |
 | `POST` | `/api/analytics/anomalies/{id}/ack` | `proxy_hosts.write` for the record host or global | `200 AnomalyRecord` | `401`, `403 forbidden`, `404 not_found` |
-| `GET`, `PUT` | `/api/adaptive-tuning/policy/{host_id}` | GET `proxy_hosts.read` for host; PUT `system.settings.manage` global | `200 TuningPolicy` | `400 invalid_input`, `401`, `403`, `500 database_error` |
+| `GET`, `PUT` | `/api/adaptive-tuning/policy/{host_id}` | GET `proxy_hosts.read` for host; PUT `system.settings.manage` global | `200 TuningPolicy` | `400 invalid_input`, `401`, `403`, `500 database_error`; PUT also has [†](#policy-state-cluster-outcomes) |
 | `GET` | `/api/adaptive-tuning/recommendations` | `proxy_hosts.read` global | `200 PolicyRecommendation[]` | `401`, `403`, `500 database_error` |
 | `POST` | `/api/adaptive-tuning/recommendations/{id}/apply` | `system.settings.manage` global | `200` empty body | `400`, `401`, `403`, `404 recommendation_not_found`, `409 emergency_disabled`, `500 database_error`, cluster write outcomes |
 | `POST` | `/api/adaptive-tuning/recommendations/{id}/rollback` | `system.settings.manage` global | `200` empty body | `400 not_applied_or_not_found`, `401`, `403`, `500 database_error`, cluster write outcomes |
-| `POST` | `/api/adaptive-tuning/emergency-disable` | `system.settings.manage` global | `200 {"emergency_disabled":boolean}` | `401`, `403`, `500 database_error` |
+| `POST` | `/api/adaptive-tuning/emergency-disable` | `system.settings.manage` global | `200 {"emergency_disabled":boolean}` | `401`, `403`, `500 database_error`, [†](#policy-state-cluster-outcomes) |
+
+## Policy-state cluster outcomes
+
+Retention PATCH, tuning-policy PUT, and emergency-disable POST submit the
+complete non-secret policy state after their local persistence/runtime update.
+Each can return `202 local_apply_pending` when the configuration is committed
+but local application is pending; `503 cluster_leader_unknown`,
+`cluster_quorum_unavailable`, `cluster_unavailable`, or
+`cluster_commit_outcome_unknown`; or `504 cluster_forward_timeout`.
+
+Their normal success audit entry and realtime event are emitted only after
+that submission succeeds. A policy-state response therefore does not roll
+back the earlier local update. Reread the resource before retrying a `202`,
+`503 cluster_commit_outcome_unknown`, or `504` response instead of assuming
+the state was not changed.
 
 ## Analytics queries and timestamps
 
-Summary, timeseries, and dimensions share optional query parameters:
-`proxy_host_id` (positive integer), `from` and `to` (RFC3339 timestamps), and
-`limit`. `from` may equal `to`, but cannot be later; their span cannot exceed
-10,080 minutes. `limit` may be 1--10,080; omitted or `0` means the default
-1,440 buckets. Invalid dates, non-positive host IDs, a reversed/oversized
-range, malformed query encoding, or a limit above 10,080 returns `400
-invalid_input`.
+Summary, timeseries, and dimensions parse and validate the same optional
+parameters: `proxy_host_id` (positive integer), `from` and `to` (RFC3339
+timestamps), and `limit`. `from` may equal `to`, but cannot be later; their
+span cannot exceed 10,080 minutes. `limit` may be 1--10,080; `0` is accepted.
+Invalid dates, non-positive host IDs, a reversed/oversized range, malformed
+query encoding, or a limit above 10,080 returns `400 invalid_input`.
 
-Buckets are one-minute aggregates and are returned chronologically after the
-filter's newest-window limit is applied. A `timestamp` is RFC3339 UTC.
+Only timeseries applies `limit`: omitted or `0` selects its default newest
+1,440 buckets, and a positive value selects that many newest matching buckets.
+Summary and dimensions validate but otherwise ignore `limit`; they aggregate
+all buckets matching the host and time filters. Timeseries buckets are
+one-minute aggregates returned chronologically. A `timestamp` is RFC3339 UTC.
 `AnalyticsSummary` totals requests, status classes, WAF/bot/rate-limit events,
 bandwidth, and nullable `p50_ms`, `p95_ms`, `p99_ms`. A bucket also carries
 `proxy_host_id`; when querying all hosts, it is the bucket's real host ID.
@@ -94,9 +111,19 @@ inclusive from 0.1 through 1.0. The default policy is `monitor`, `50`, `300`,
 and `0.8`. A successful update commits policy state, audits
 `adaptive_tuning_policy_updated`, and emits `adaptive_tuning.changed`.
 
-Recommendations contain `id`, `host_id`, `patch` (optional `capacity`,
-`refill_per_second`, and `waf_mode`), `confidence`, `reason`, `created_at`,
-and `applied`. Apply refuses monitor-mode policies (`400 monitor_mode_only`),
+Recommendations contain:
+
+| Field | Type |
+| --- | --- |
+| `id`, `host_id` | Integer |
+| `patch` | Object with optional `capacity`, `refill_per_second`, and `waf_mode` |
+| `confidence` | Number |
+| `reason` | String |
+| `created_at`, `applied_at` | RFC3339 timestamp; `applied_at` is `null` until applied |
+| `applied` | Boolean |
+| `previous_config_json` | JSON string of the previous rate-limit configuration, or `null` before application |
+
+Apply refuses monitor-mode policies (`400 monitor_mode_only`),
 an already applied record (`400 already_applied_or_not_found`), a missing ID
 (`404 recommendation_not_found`), or a globally disabled engine (`409
 emergency_disabled`). It commits the host runtime policy, saves the previous
@@ -104,10 +131,14 @@ policy for rollback, audits `recommendation_applied`, and emits
 `adaptive_tuning.changed`. Rollback restores that saved policy, audits
 `recommendation_rolled_back`, and emits the same event.
 
-In clustered operation, apply and rollback can return the control-plane
-cluster write response if quorum is unavailable or local activation is pending;
-the latter is `202 local_apply_pending` after the cluster commit and its
-separate pending audit records. Do not repeat an apply blindly after a timeout:
-inspect the recommendation state first. `POST .../emergency-disable` toggles
-(not sets) the persisted global flag, commits it, audits
-`adaptive_tuning_emergency_toggle`, and emits `adaptive_tuning.changed`.
+In clustered operation, apply and rollback can return `202
+local_apply_pending`; `503 cluster_leader_unknown`,
+`cluster_quorum_unavailable`, `cluster_unavailable`, or
+`cluster_commit_outcome_unknown`; or `504 cluster_forward_timeout`. The `202`
+path follows a committed cluster write and records separate committed/pending
+audit entries before returning. Other cluster responses occur before the
+normal applied/rolled-back audit and realtime event. Reread the recommendation
+before retrying after a timeout or unknown-outcome response. `POST
+.../emergency-disable` toggles (not sets) the persisted global flag, commits
+it, audits `adaptive_tuning_emergency_toggle`, and emits
+`adaptive_tuning.changed`.
