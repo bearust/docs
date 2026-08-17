@@ -1,0 +1,162 @@
+---
+id: api-security
+sidebar_position: 6
+---
+
+# Security policy API
+
+All routes on this page use the session and CSRF rules in the [API
+overview](./overview.mdx). Policy routes are global: proxy-host-scoped grants
+do not authorize them. Successful policy writes publish the named event below;
+they also create a redacted audit entry after their runtime or cluster-policy
+commit succeeds. The bot challenge endpoints are the intentional public,
+CSRF-exempt exception.
+
+## Route table
+
+| Method | Path | Permission | Success | Implemented errors |
+| --- | --- | --- | --- | --- |
+| `GET`, `PATCH` | `/api/waf/config` | `roles.manage` | `200 WafConfig` | `400 invalid_input` (patch), `401`, `403 forbidden`, `500 database_error` |
+| `GET`, `POST` | `/api/waf/rules` | `roles.manage` | `200 WafRule[]`, `201 WafRule` | `400 invalid_input`, `401`, `403`, `409 conflict`, `500 database_error` |
+| `PATCH`, `DELETE` | `/api/waf/rules/{id}` | `roles.manage` | `200 WafRule`, `204` | `400 invalid_input`, `401`, `403`, `404 not_found`, `409 conflict`, `500 database_error` |
+| `POST` | `/api/waf/rules/import` | `roles.manage` | `200` empty body | `400 invalid_input`, `401`, `403`, `409 conflict`, `500 database_error` |
+| `GET` | `/api/waf/rules/export` | `roles.manage` | `200 application/toml` | `401`, `403`, `500 database_error` |
+| `GET`, `POST` | `/api/waf/feedback` | `roles.manage` | `200 WafFeedback[]`, `201 WafFeedback` | `400 invalid_input`, `401`, `403`, `500 database_error` |
+| `GET`, `POST` | `/api/ip-security/rules` | `roles.manage` | `200 IpSecurityRule[]`, `201 IpSecurityRule` | `400 invalid_input`, `401`, `403`, `500 database_error`, `500 reload_failed` |
+| `PATCH`, `DELETE` | `/api/ip-security/rules/{id}` | `roles.manage` | `200 IpSecurityRule`, `204` | `400 invalid_input`, `401`, `403`, `404 not_found`, `500 database_error`, `500 reload_failed` |
+| `GET`, `PATCH` | `/api/bot/config` | `bot_protection.manage` | `200 BotConfig` | `400 invalid_input`, `401`, `403 forbidden`, `500 database_error` |
+| `GET`, `POST` | `/api/bot/trusted-crawlers` | `bot_protection.manage` | `200 TrustedCrawler[]`, `201 TrustedCrawler` | `400 invalid_input`, `401`, `403`, `500 database_error` |
+| `PATCH`, `DELETE` | `/api/bot/trusted-crawlers/{id}` | `bot_protection.manage` | `200 TrustedCrawler`, `204` | `400 invalid_input`, `401`, `403`, `404 not_found`, `500 database_error` |
+| `POST` | `/api/bot/config/import` | `bot_protection.manage` | `200` empty body | `400 invalid_input`, `401`, `403`, `500 database_error` |
+| `GET` | `/api/bot/config/export` | `bot_protection.manage` | `200 application/toml` | `401`, `403`, `500 database_error` |
+| `POST` | `/api/bot/challenge` | Public; CSRF-exempt | `200 BotChallenge`, `Cache-Control: no-store` | `400 invalid_input`, `503 challenge_failed` |
+| `POST` | `/api/bot/challenge/verify` | Public; CSRF-exempt | `200 {"ok":true}`, clearance cookie, `Cache-Control: no-store` | `400 challenge_failed` |
+| `GET`, `PATCH` | `/api/rate-limit/config` | `system.settings.manage` | `200 RateLimitConfig` | `400 invalid_input`, `401`, `403 forbidden`, `500 database_error` |
+
+`204 No Content` has no JSON body. JSON bodies reject unknown fields. The
+router's 3 MiB body cap applies unless a route below has a smaller cap.
+
+## WAF configuration, rules, and feedback
+
+`WafConfig` is `{ "mode": "monitor-only"|"block", "updated_at": RFC3339 }`.
+`PATCH /api/waf/config` requires exactly the `mode` field. It persists and
+reloads the WAF before it records `waf_config_updated` and emits `waf.changed`.
+Persistence or reload errors share the safe `500 database_error` response.
+
+Create a custom rule with `name`, `category`, `severity`, optional `action`,
+and `matcher`. `name` is trimmed, non-empty, and at most 128 bytes;
+`category` is at most 64 bytes; `severity` is at most 16 bytes. `action` is
+`inherit`, `allow`, `log`, or `block` (default `inherit`). A matcher has
+`field` (`any`, `method`, `path`, `query`, `headers`, or `body`) and exactly a
+usable `builtin` (`sqli`, `xss`, `path_traversal`, or `command_injection`) or
+regex `pattern` (at most 2,048 bytes). The pattern is compiled case
+insensitively. Responses contain `matcher_json`, not a parsed matcher.
+
+```json
+{
+  "name": "test-query-rule",
+  "category": "test",
+  "severity": "medium",
+  "action": "block",
+  "matcher": {"field":"query","pattern":"test-only-signal"}
+}
+```
+
+Only `source: "custom"` rules can be changed or deleted. Attempting a
+built-in mutation returns `409 conflict`; an absent rule is `404 not_found`.
+Create, update, and import require a successful reload, while delete attempts
+a reload but still returns `204` if its database delete succeeded. Each
+successful mutation records `waf_rule_created`, `waf_rule_updated`,
+`waf_rule_deleted`, or `waf_rules_imported` and emits `waf.changed`.
+
+The import body is TOML under the normal 3 MiB request cap. It must have
+`version = 1`; optional `mode`; and `[[rules]]` entries with `name`,
+`category`, `severity`, optional `action`, `field`, optional `pattern`, and
+optional `builtin`. Validation occurs before inserts, so an invalid matcher
+does not insert the bad entry; insertion conflicts return `409 conflict`.
+Export emits only custom rules as `application/toml` with `version = 1` and
+the current mode. Use a local test file, not a production policy export:
+
+```sh
+curl --fail-with-body -k -b "$cookie_jar" \
+  -H "X-CSRF-Token: $csrf_token" \
+  -H 'Content-Type: application/toml' \
+  --data-binary @./testdata/waf-rules.toml \
+  https://127.0.0.1:8081/api/waf/rules/import
+```
+
+`GET /api/waf/feedback` returns at most 200 newest feedback records. Create
+accepts optional `request_id` (at most 128 bytes), optional numeric `rule_id`,
+`label` (`false_positive` or `true_positive`, default `false_positive`), and
+optional `note` (at most 1,024 bytes). It records `waf_feedback_created` and
+emits `security.changed`; it does not reload the WAF.
+
+## IP security rules
+
+An IP rule has `id`, `cidr`, `action`, `score`, `country_code`, `enabled`,
+`created_at`, and `updated_at`. Create requires `cidr`; `action` defaults to
+`monitor`, `score` to `0`, and `enabled` to `true`. `action` is `monitor`,
+`block`, or `allow`. A rule CIDR must be valid and at most 64 bytes; `score`
+is inclusive from `-100000` through `100000`; `country_code` is nullable or
+1--8 ASCII alphanumeric characters and is stored uppercase. Patch accepts any
+subset of those mutable fields, with `country_code: null` clearing it.
+
+Each successful create, update, or delete reloads the IP policy, commits the
+policy state, records `ip_security_rule_created`, `ip_security_rule_updated`,
+or `ip_security_rule_deleted`, and emits `security.changed`. A missing item
+is `404 not_found`; a validation failure is `400 invalid_input`; a failed
+activation is `500 reload_failed`. Do not treat a reload failure as a success.
+
+## Bot policy and trusted crawlers
+
+`BotConfig` returns `mode`, `threshold`, `ttl_seconds`, and `updated_at`; it
+never exposes the fingerprint key. Modes are `monitor`, `challenge`, and
+`block`. Patch any subset of `mode`, `threshold`, and `ttl_seconds`: threshold
+must be 1--100 and TTL must be 1--86,400 seconds. A successful patch reloads
+the policy, commits it, records `bot_config_updated`, and emits `bot.changed`.
+
+Trusted crawler objects have `id`, `category: "trusted_crawler"`, `weight: 0`,
+`trusted_user_agent`, `trusted_domain`, and `enabled`. Create and patch require
+non-empty `user_agent` and `domain`, each at most 256 bytes; `enabled` defaults
+to `true`. The domain is normalized lower-case. There may be at most 128 bot
+rules total and 32 enabled trusted rules. Successful create/update/delete
+reloads with rollback on reload failure, commits state, audits
+`bot_trusted_crawler_created`, `bot_trusted_crawler_updated`, or
+`bot_trusted_crawler_deleted`, and emits `bot.changed`.
+
+Bot import is a transactional replacement and has a stricter 64 KiB body cap.
+It requires `version = 1`, allows optional `mode`, `threshold`, and
+`ttl_seconds`, and uses `[[trusted_crawlers]]` with `user_agent`, `domain`,
+and optional `enabled`. It rejects more than 32 trusted crawlers before
+mutation. Success reloads, commits, audits `bot_config_imported` with redacted
+details, and emits `bot.changed`; export returns the equivalent TOML without
+the fingerprint key.
+
+## Public bot challenge
+
+`POST /api/bot/challenge` accepts exactly `{ "fingerprint": string }` and has
+a 16 KiB route body cap. The fingerprint must be non-empty and at most 128
+bytes. Its `200` response is `{ "token", "difficulty", "expires_at",
+"fingerprint_prefix" }`; `expires_at` is a Unix timestamp. Verification takes
+exactly `token`, `fingerprint`, and `solution`. On success it sets the
+five-minute `bearust_bot_clear` cookie (`Secure`, `HttpOnly`, `SameSite=Strict`)
+and returns `{"ok":true}`. Never reuse a real clearance token in examples.
+
+## Global rate-limit policy
+
+`RateLimitConfig` is `enabled`, `action`, `capacity`, `refill_per_second`,
+`key_scope`, and `updated_at`. `action` is `monitor` or `block`; `key_scope`
+is `proxy_host_ip` or `proxy_host_path_ip`. Patch accepts any subset. Capacity
+is 1--1,000,000 and refill is a finite 0.001--100,000 per second. A successful
+write updates the in-memory limiter, commits policy state, audits
+`rate_limit_config_updated`, and emits `rate_limit.changed`.
+
+```json
+{
+  "enabled": true,
+  "action": "block",
+  "capacity": 10,
+  "refill_per_second": 2.5,
+  "key_scope": "proxy_host_ip"
+}
+```

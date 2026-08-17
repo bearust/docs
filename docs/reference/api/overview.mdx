@@ -89,7 +89,10 @@ provider tokens in shell history, tickets, or documentation.
 | Cookie-aware mutation | `POST /api/auth/logout` | The handler is idempotent and returns `204` even without a session; when a current client sends its CSRF cookie, it must send the matching CSRF header. |
 | Authenticated mutation | All other protected writes | Send the session cookie and CSRF header. |
 | Authenticated read | `/api/auth/me`, preferences/theme, events, and every resource reference page | Authentication and then the endpoint permission are checked. |
-| Outside this task | bot challenge, security, analytics, AI, cluster, and plugin routes | They have their own API pages. |
+| Security policy and bot challenge | WAF, IP security, bot, and rate-limit routes | [Security API](./security.mdx) owns their endpoint contracts. |
+| Analytics and adaptation | Analytics, baseline, anomaly, and adaptive-tuning routes | [Analytics and tuning API](./analytics-and-tuning.mdx) owns their endpoint contracts. |
+| AI Advisor | Status, analysis, insight, and draft routes | [AI Advisor API](./ai-advisor.mdx) owns their endpoint contracts. |
+| Cluster and plugins | Cluster snapshot and plugin lifecycle routes | [Cluster and plugins API](./cluster-and-plugins.mdx) owns their endpoint contracts. |
 
 ## Authorization and scopes
 
@@ -129,3 +132,4 @@ after reconnecting.
 - Session/login implementation: `bearust/src/control_plane/auth.rs`
 - Request and response models: `bearust/src/control_plane/models.rs`
 - Browser client types: `bearust/frontend/src/api.ts`
+- Prometheus endpoint and its shared output cap: [Metrics and errors](../metrics-and-errors.mdx)
