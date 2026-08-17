@@ -12,7 +12,7 @@ The system-managed roles are `admin`, `operator`, and `viewer`.
 
 | Role | Built-in capabilities |
 | --- | --- |
-| `admin` | All built-in permissions, including user, role, session, system, audit-export, bot-protection, plugin, and AI-draft approval administration. |
+| `admin` | All built-in permissions, including user, role, session, system, bot-protection, plugin, and AI-draft approval administration. The `audit_logs.export` permission key is reserved on this role, but no export endpoint is implemented yet (see [roadmap](/docs/roadmap)). |
 | `operator` | Reads proxy hosts, certificates, audit history, and AI Advisor data; can change proxy hosts and certificates; can request AI Advisor work. |
 | `viewer` | Reads proxy hosts, certificates, audit history, and AI Advisor data. |
 
@@ -32,6 +32,6 @@ Disabled users cannot continue using an existing session. When a user is disable
 
 Audit history records safe event metadata and actor identifiers when available. Use the management interface's time and event/user filters to narrow an investigation, and review results in the service's returned chronological ordering rather than assuming an external log order. Plugin lifecycle records intentionally use bounded IDs, operation/outcome values, and stable error codes instead of paths, manifests, digests, or module contents.
 
-Audit history is read-only: it is evidence of control-plane activity, not a general editing surface. Administrators can export audit data; viewers and operators can read it but do not receive that export permission by default. Audit publication is best-effort and does not change the outcome of the action being recorded.
+Audit history is read-only: it is evidence of control-plane activity, not a general editing surface. No role can export audit data today — the `audit_logs.export` permission key exists and is reserved on the `admin` role, but no export endpoint is implemented. Audit log export is tracked as unshipped work on the [roadmap](/docs/roadmap). Audit publication is best-effort and does not change the outcome of the action being recorded.
 
 **Verify:** perform a test configuration change, filter audit history for its event and actor, and confirm the record contains the expected safe metadata but no password, session value, or submitted secret. Confirm that no audit-history mutation control is available.

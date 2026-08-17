@@ -229,8 +229,20 @@ if (!fs.existsSync(CONTROL_PLANE_MOD_RS)) {
       .map((file) => fs.readFileSync(file, 'utf8'))
       .join('\n');
 
+    // Routes are documented as inline code, e.g. `` `GET /api/users` `` or
+    // `` `/api/users` ``. A bare substring check (apiDocsCorpus.includes(route))
+    // would let a longer route's text (e.g. "/api/users/{id}") silently
+    // "cover" a shorter, undocumented route (e.g. "/api/users") because the
+    // shorter string is a substring of the longer one. Require that the
+    // route is bounded by a non-path character (backtick, whitespace, or
+    // similar) on both sides so it can only match its own occurrence.
+    const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pathContinuation = '[A-Za-z0-9_\\-/{}]';
     for (const route of routesChecked) {
-      if (!apiDocsCorpus.includes(route)) {
+      const boundaryPattern = new RegExp(
+        `(?<!${pathContinuation})${escapeRegExp(route)}(?!${pathContinuation})`,
+      );
+      if (!boundaryPattern.test(apiDocsCorpus)) {
         errors.push(
           `Route "${route}" registered in source but not documented in docs/reference/api/`,
         );

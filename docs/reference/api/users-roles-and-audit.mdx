@@ -143,6 +143,13 @@ by `created_at` descending and then `id` descending. The response fields are
 exactly `items`, `page`, `page_size`, and `total`; every item contains `id`,
 `actor`, `event`, `details`, and `created_at`.
 
+Using the session cookie from the [API overview](./overview.mdx#sessions-and-csrf):
+
+```sh
+curl --fail-with-body -k -b "$cookie_jar" \
+  'https://127.0.0.1:8081/api/audit-logs?event=user_created&page=1&page_size=25'
+```
+
 ```json
 {
   "items": [

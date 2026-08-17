@@ -48,7 +48,7 @@ export default function Home(): ReactNode {
               <Heading as="h3">Configure a first proxy</Heading>
               <p>Connect a host and upstream, then validate the request path end to end.</p>
             </Link>
-            <Link className={styles.pathCard} to="/docs/intro">
+            <Link className={styles.pathCard} to="/docs/contributing/development-setup">
               <span className={styles.cardLabel}>Build with us</span>
               <Heading as="h3">Contribute to BeaRust</Heading>
               <p>Understand the runtime, control plane, and contributor workflow.</p>
@@ -58,8 +58,8 @@ export default function Home(): ReactNode {
         <section className={styles.referenceBand}>
           <p>Looking for a specific contract?</p>
           <div>
-            <Link to="/docs/intro">Browse the API reference</Link>
-            <Link to="/docs/intro">Explore configuration</Link>
+            <Link to="/docs/reference/api/api-overview">Browse the API reference</Link>
+            <Link to="/docs/reference/configuration/overview">Explore configuration</Link>
           </div>
         </section>
       </main>

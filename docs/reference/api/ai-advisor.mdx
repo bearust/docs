@@ -24,6 +24,18 @@ Unauthorized permission checks are themselves audited as
 `ai_advisor_authorization_denied`. Normal users can list only their own jobs;
 the listing is not a global insight feed.
 
+Check whether the advisor is enabled with the session cookie from the
+[API overview](./overview.mdx#sessions-and-csrf):
+
+```sh
+curl --fail-with-body -k -b "$cookie_jar" \
+  'https://127.0.0.1:8081/api/ai-advisor/status'
+```
+
+```json
+{"enabled": true}
+```
+
 ## Analysis workflow
 
 Create a job with an exact JSON object containing `workflow` plus optional
