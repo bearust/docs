@@ -87,6 +87,14 @@ The password is write-only and is never returned. When no record exists, the
 endpoint returns a disabled default with `realm` set to `"BeaRust protected
 host"`, an empty `username`, and an empty `updated_at`.
 
+After authorization, this read route does not separately check whether the
+host exists. Therefore, a globally authorized reader receives that disabled
+default for an unknown `{id}` as well as for an existing host with no auth
+record. Its `404` is the authorization mask for a reader without access to the
+requested host (for example, an out-of-scope scoped reader), not an
+authoritative existence result. `PUT /api/proxy-hosts/{id}/auth` does check
+host existence and returns `404` for an unknown host after authorization.
+
 `PUT` accepts any subset of `enabled`, `realm`, `username`, and `password`.
 The existing values are retained for omitted fields. A supplied password must
 be 12--512 characters. A realm must be 1--128 characters; a username is at

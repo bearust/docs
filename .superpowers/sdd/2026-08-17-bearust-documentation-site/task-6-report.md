@@ -118,3 +118,31 @@ reference rather than this Task 6 page set.
   7 API domains unexpanded.
 - The build emits Node's `localStorage` experimental warning in this runtime;
   it does not affect Docusaurus's successful static output.
+
+## Fix round 1
+
+Addressed three source-accuracy review findings without expanding Task 6 scope:
+
+- `GET /api/roles` is now documented as `RoleDetail[]`. The collection, create,
+  item-read, and update responses all include `permissions` and `scopes`, as
+  returned by `repository::list_roles` through `RoleDetail`.
+- The certificate-list contract is now `CertificateMetadata[]` with exactly
+  `id`, `name`, `source`, `covered_hostnames`, `expiry`, and `active`. The
+  removed `acme` field never belongs to this list response; ACME state is read
+  from the dedicated certificate-status endpoint.
+- The per-host Basic Auth read documents its exact edge case: after successful
+  authorization, a globally authorized reader receives the disabled default
+  for an unknown ID because the handler does not check host existence. `404`
+  remains the authorization mask for inaccessible scoped reads; the write
+  route separately checks host existence.
+
+Fix-round source references: `bearust/src/control_plane/repository.rs`
+(`list_roles` around line 2300 and `list_certificates` around line 3577),
+`bearust/src/control_plane/models.rs` (`RoleDetail` around line 288 and
+`CertificateMetadata` around line 593), and
+`bearust/src/control_plane/mod.rs` (`get_host_auth`).
+
+Fix-round verification: `npm run typecheck`, `npm run build`, and
+`git diff --check` all passed. A focused content audit confirmed the new role
+and certificate types, the dedicated ACME-status boundary, the host-auth
+unknown-ID explanation, and removal of the prior `RoleRecord[]`/`acme` claims.

@@ -13,7 +13,7 @@ proxy-host scope does not authorize certificate operations.
 
 | Method | Path | Permission | Success | Key failures |
 | --- | --- | --- | --- | --- |
-| `GET` | `/api/certificates` | `certificates.read` | `200 Certificate[]` | `401`, `403`, `500` |
+| `GET` | `/api/certificates` | `certificates.read` | `200 CertificateMetadata[]` | `401`, `403`, `500` |
 | `POST` | `/api/certificates` | `certificates.write` | `201 CertificateUploadResponse` | `400`, `401`, `403`, `409`, `413` |
 | `POST` | `/api/certificates/{id}/activate` | `certificates.write` | `204` | `400`, `401`, `403`, `404`, `502 reload_failed` |
 | `POST` | `/api/certificates/acme` | `certificates.write` | `202 AcmeJobResponse` | `400 invalid_hostname|unsupported_challenge`, `401`, `403`, `409 acme_busy`, `502 acme_failed` |
@@ -35,12 +35,12 @@ Certificate list entries contain:
   "source": "custom",
   "covered_hostnames": ["app.example.test"],
   "expiry": "Jul 18 00:00:00 2027 GMT",
-  "active": false,
-  "acme": null
+  "active": false
 }
 ```
 
-`acme` is absent or an ACME-status value as appropriate. Upload uses
+These six fields are the complete certificate-list response. ACME state is
+available only from `GET /api/certificates/{id}/status`. Upload uses
 `multipart/form-data`, not JSON. Supply these exact field names:
 
 | Multipart field | Required | Value |
@@ -53,7 +53,7 @@ The total multipart data may not exceed 3 MiB and each individual field may
 not exceed 1 MiB; excess data returns `413 Payload Too Large`. Missing fields,
 invalid multipart data, or invalid certificate/key material returns `400`.
 A persistence conflict returns `409`. On `201`, the response deliberately
-omits `active` and `acme`:
+omits `active`:
 
 ```json
 {

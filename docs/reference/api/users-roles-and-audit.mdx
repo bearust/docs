@@ -18,7 +18,7 @@ administrative resources: proxy-host scopes do not authorize them.
 | `PATCH` | `/api/users/{id}` | `users.manage` | `200 User` | `400`, `401`, `403`, `404`, `409 last_admin`, `500` |
 | `DELETE` | `/api/users/{id}` | `users.manage` | `204` | `401`, `403 self_mutation`, `404`, `409 last_admin`, `500` |
 | `POST` | `/api/users/{id}/sessions/revoke` | `sessions.revoke` | `200` revoked-count object | `400`, `401`, `403`, `404`, `500` |
-| `GET` | `/api/roles` | `roles.manage` | `200 RoleRecord[]` | `401`, `403`, `500 database_error` |
+| `GET` | `/api/roles` | `roles.manage` | `200 RoleDetail[]` | `401`, `403`, `500 database_error` |
 | `POST` | `/api/roles` | `roles.manage` | `201 RoleDetail` | `400 invalid_input`, `401`, `403`, `409 conflict`, `500` |
 | `GET` | `/api/roles/{id}` | `roles.manage` | `200 RoleDetail` | `400`, `401`, `403`, `404 not_found`, `500` |
 | `PATCH` | `/api/roles/{id}` | `roles.manage` | `200 RoleDetail` | `400`, `401`, `403`, `404`, `409 conflict`, `500` |
@@ -83,9 +83,9 @@ proxy hosts and certificates and reads audit history; `viewer` reads proxy
 hosts, certificates, and audit history. Built-in roles cannot be patched or
 deleted (`409 conflict`).
 
-`GET /api/roles` returns records with `id`, `slug`, `name`, `description`, and
-`system_managed`. `GET`, `POST`, and `PATCH` role details add `permissions` and
-`scopes`:
+`GET /api/roles` returns a `RoleDetail` for every list item. The collection and
+the `POST`, item `GET`, and `PATCH` responses all include `id`, `slug`, `name`,
+`description`, `system_managed`, `permissions`, and `scopes`:
 
 ```json
 {
