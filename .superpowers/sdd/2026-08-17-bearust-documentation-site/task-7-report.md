@@ -138,3 +138,13 @@ Fix-round verification results:
 - `npm run build` passed; Node emitted only its localStorage experimental
   warning.
 - `git diff --check` passed.
+
+## Fix round 1 re-review
+
+- Removed the internal `#route-table` fragment from the security policy-state
+  explanation. The text now refers directly to the marked mutation rows, so it
+  does not rely on an implicit generated heading slug.
+- Verified there are no remaining `#route-table` links in `security.mdx`; the
+  remaining policy-state links target the matching generated
+  `cluster-policy-state-outcomes` heading slug, and the documentation build and
+  whitespace checks pass.
