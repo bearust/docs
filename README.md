@@ -24,11 +24,10 @@ Run these before handing off documentation changes:
 
 ```sh
 npm run typecheck
-npm run validate:docs
 npm run build
 ```
 
-`validate:docs` is added as the documentation corpus is completed. `npm run build` generates the static site in `build/`.
+Task 9 adds the documentation validator and its `npm run validate:docs` command. `npm run build` generates the static site in `build/`.
 
 ## Translation workflow
 
