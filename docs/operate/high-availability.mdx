@@ -8,11 +8,26 @@ Clustering is optional. With no configured peers, BeaRust operates as a standalo
 
 ## Configure each node deliberately
 
-Give every node a unique `NODE_ID`. Configure the same peer set through `CLUSTER_PEERS`, and use one shared, high-entropy `CLUSTER_AUTH_TOKEN` for the peer transport. Environment values override the corresponding cluster configuration values. Keep the token in a secret manager or deployment-secret mechanism; never commit or paste a real token into configuration examples.
+Give every node a unique `NODE_ID`. Configure `CLUSTER_PEERS` per node: list the *other* cluster members, never the local `NODE_ID`. BeaRust rejects a peer entry whose ID matches the local node ID. Use one shared, high-entropy `CLUSTER_AUTH_TOKEN` for the peer transport. Environment values override the corresponding cluster configuration values. Keep the token in a secret manager or deployment-secret mechanism; never commit or paste a real token into configuration examples.
 
 ```sh
+# node-a
 NODE_ID=node-a
 CLUSTER_PEERS='node-b=10.0.0.12:7000,node-c=10.0.0.13:7000'
+CLUSTER_AUTH_TOKEN='<cluster-shared-secret>'
+```
+
+```sh
+# node-b
+NODE_ID=node-b
+CLUSTER_PEERS='node-a=10.0.0.11:7000,node-c=10.0.0.13:7000'
+CLUSTER_AUTH_TOKEN='<cluster-shared-secret>'
+```
+
+```sh
+# node-c
+NODE_ID=node-c
+CLUSTER_PEERS='node-a=10.0.0.11:7000,node-b=10.0.0.12:7000'
 CLUSTER_AUTH_TOKEN='<cluster-shared-secret>'
 ```
 

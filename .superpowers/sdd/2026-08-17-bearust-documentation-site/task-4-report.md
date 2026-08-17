@@ -63,3 +63,23 @@ The Docusaurus build emitted Node's existing experimental `localStorage` warning
 
 - This is documentation-only verification; no live BeaRust cluster, plugin runtime, or provider integration was started from this worktree.
 - The linked plugin authoring guide intentionally points to the BeaRust repository source. Its content is source-backed, but the public repository path should remain valid when that repository's default branch strategy changes.
+
+## Fix round 1
+
+Addressed both review findings without changing unrelated documentation.
+
+- `docs/operate/high-availability.mdx` now states that `CLUSTER_PEERS` is node-specific and must contain only the other cluster members. It includes separate `node-a`, `node-b`, and `node-c` examples, each omitting its local `NODE_ID`, matching the configuration validation that rejects a local node ID in the peer list.
+- `docs/operate/ai-advisor.mdx` now limits the redaction claim to the default redactor applied to advisor message content before request-body construction. It explicitly states that this is not a guarantee that all sensitive values are removed and that `LLM_API_KEY` is intentionally sent to the configured provider as a Bearer authorization credential.
+
+### Fix-round source references
+
+- `/home/rizalord/Projects/personal/bearust/src/config/mod.rs` — peer validation rejects a peer whose `node_id` equals `cluster.node_id`.
+- `/home/rizalord/Projects/personal/bearust/src/ai_advisor_provider.rs` — applies `Redactor::default()` to message content and sends `api_key` through `bearer_auth`.
+
+### Fix-round verification
+
+- `git diff --check` passed with no whitespace errors.
+- Focused assertions confirmed all three peer examples omit their local node ID, the obsolete same-peer-set wording is absent, and the AI guide contains both the no-guarantee redaction boundary and Bearer-credential disclosure.
+- `npm run typecheck` passed (`tsc`, exit 0).
+- `npm run build` passed (Docusaurus production build, exit 0).
+- `npm run validate:docs` remains intentionally deferred to Task 9 because the repository has no such script.
