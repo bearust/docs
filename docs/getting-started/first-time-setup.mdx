@@ -27,6 +27,6 @@ curl -i -c cookies.txt \
   http://127.0.0.1:8081/api/setup/initialize
 ```
 
-On success, expect `201 Created` and an enabled `admin` user response. When session creation succeeds, the response also sets the `bearust_session` HttpOnly cookie and the `bearust_csrf` cookie; `cookies.txt` keeps them for subsequent local API requests. An invalid token returns `403`, invalid email or a password shorter than 12 characters returns `400`, and a second setup attempt returns `409 already_initialized`.
+On success, expect `201 Created` and an enabled `admin` user response. When session creation succeeds, the response sets the `bearust_session` HttpOnly cookie and the `bearust_csrf` cookie. Both are marked `Secure`, so `cookies.txt` records them but curl and browsers do not replay them to the plain `http://127.0.0.1:8081` control listener. The setup request and unauthenticated status check remain usable over that local HTTP listener; authenticated browser or API use requires an HTTPS gateway that terminates TLS and forwards to the loopback control plane. An invalid token returns `403`, invalid email or a password shorter than 12 characters returns `400`, and a second setup attempt returns `409 already_initialized`.
 
 The default loopback-only mapping is a safety boundary, not a public login endpoint. Keep it local or place a deliberately secured HTTPS gateway in front of it; do not make port `8081` internet-facing as a shortcut.

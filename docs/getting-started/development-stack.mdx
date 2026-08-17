@@ -12,6 +12,21 @@ docker compose -f docker-compose.dev.yml up --build
 
 Open the frontend at `http://localhost:5183`. The backend remains available at the loopback-only `http://127.0.0.1:8081`, while Vite proxies browser `/api` requests to `http://bearust:8081` over the Compose network. The proxy data plane continues to use port `8080`.
 
+## Verify the frontend and API proxy
+
+Open `http://localhost:5183` in a browser; the management UI should load. Then
+compare the direct control-plane response with the frontend's Vite proxy:
+
+```sh
+curl --fail http://127.0.0.1:8081/api/setup/status
+curl --fail http://localhost:5183/api/setup/status
+```
+
+Expect both commands to return the same `{"initialized":false}` or
+`{"initialized":true}` response. The first confirms the loopback backend on
+port `8081`; the second confirms that Vite on port `5183` forwards `/api` to
+the `bearust` service.
+
 For a new development data volume, the stack supplies `bearust-dev-setup` as `BEARUST_SETUP_TOKEN` unless you override it. The frontend setup page pre-fills that development-only value. Do not reuse it in production; configure a long random value in an untracked `.env` instead.
 
 Changes to Rust and frontend files are reflected through the backend watch workflow and Vite hot module reload. The Compose stack uses isolated named development volumes for BeaRust data and TLS state, Cargo caches and build output, plus frontend `node_modules` and npm cache.

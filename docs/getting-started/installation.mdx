@@ -6,6 +6,12 @@ sidebar_position: 1
 
 These steps start the production-oriented Docker Compose deployment from a BeaRust source checkout. They keep persistent state in Docker named volumes instead of host directories.
 
+## Prerequisites
+
+- Docker Engine with the Docker Compose plugin available as `docker compose`.
+- A local BeaRust source checkout containing `docker-compose.yml`,
+  `.env.example`, and `config/bearust.example.toml`.
+
 ## Start the default deployment
 
 Copy the example environment file so local choices and secrets remain outside version control, then build and start the stack:
@@ -18,6 +24,20 @@ docker compose up -d --build
 The proxy data plane listens on port `8080`. The control API and bundled UI listen on port `8081`, but Compose publishes that port only to `127.0.0.1:8081`. Do not expose `8081` publicly by changing the port mapping without putting the management surface behind an appropriate HTTPS and access control design.
 
 Docker creates the `bearust-data` named volume for SQLite-backed control-plane state and the `bearust-tls` named volume for certificate files. Keep both when restarting or upgrading the default deployment.
+
+## Verify the deployment
+
+Check the Compose health state and the local control-plane listener:
+
+```sh
+docker compose ps
+curl --fail http://127.0.0.1:8081/api/setup/status
+```
+
+Expect the `bearust` service to show `running (healthy)` and the curl command
+to return `{"initialized":false}` on a new deployment (or `true` after setup).
+That healthy state includes Compose's checks for the PID file and both the
+container's `8080` data-plane and `8081` control-plane listeners.
 
 ## Bootstrap token
 

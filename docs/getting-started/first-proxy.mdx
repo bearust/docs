@@ -33,6 +33,13 @@ path_prefix = "/v1"
 upstream_pool = "api"
 ```
 
+`control_bind = "0.0.0.0:8081"` makes the control service reachable inside the
+container network. In the supplied Docker Compose file, host publication is
+still limited to `127.0.0.1:8081`; that Compose mapping provides the safety
+boundary. Do not use this bind directly on an untrusted host interface. Keep
+the control plane loopback-only or put it behind an HTTPS gateway with access
+control.
+
 `[server]` configures listeners and persistent paths. `[health]` supplies health-check timing defaults when values are omitted. Each `[[upstream_pools]]` names a load-balanced backend group; its `[[upstream_pools.backends]]` entries define reachable addresses and either TCP checks or HTTP checks with a `health_path`. Each `[[routes]]` matches a host and path prefix, then selects a pool. Add the `/` route from the example when the same host should handle paths beyond `/v1`.
 
 ## Validate and reload
