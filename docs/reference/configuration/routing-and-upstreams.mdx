@@ -5,7 +5,8 @@ sidebar_position: 3
 # Routing and upstreams
 
 At least one `[[upstream_pools]]` and one `[[routes]]` are required. The
-checked-in example is the recommended starting shape:
+following is the complete routing and upstream portion of the checked-in
+`config/bearust.example.toml` base configuration:
 
 ```toml
 [[upstream_pools]]
@@ -25,6 +26,12 @@ health_check = "tcp"
 name = "api-v1"
 host = "api.example.com"
 path_prefix = "/v1"
+upstream_pool = "api"
+
+[[routes]]
+name = "api-root"
+host = "api.example.com"
+path_prefix = "/"
 upstream_pool = "api"
 ```
 

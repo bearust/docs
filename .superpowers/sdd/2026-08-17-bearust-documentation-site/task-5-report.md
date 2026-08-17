@@ -36,6 +36,34 @@ reference pages, which remain owned by Tasks 6–7.
 - `docs: add task 5 delivery report` — this requested, gitignored delivery
   report, force-added without changing repository ignore rules.
 
+## Fix round 1
+
+Addressed all three reviewer findings with source-backed, focused corrections:
+
+- Corrected `configuration/overview` to describe Unix `SIGHUP` as supervisor
+  process replacement: candidate TOML/TLS validation, upgrade-child startup,
+  readiness wait, inherited Pingora listener FDs, and old-child `SIGQUIT`
+  draining. It now explains the safe behavior for invalid/unready candidates
+  and the startup boundary for main bind, TLS, HTTP/3, control, and Prometheus
+  listeners.
+- Corrected the control-plane order in `configuration/overview`: persist the
+  candidate first, apply to runtime second, restore the previous persisted
+  configuration if runtime application fails, then best-effort mirror to TOML.
+- Expanded the routing page snippet to include the checked-in `api-root` `/`
+  route and accurately labels it as the complete routing/upstream portion of
+  `config/bearust.example.toml`.
+
+Fix-round source evidence: `src/cli.rs` lines 127–255 and 500–710;
+`src/control_plane/runtime_sync.rs` lines 92–125 and 260–330; and
+`config/bearust.example.toml`.
+
+Fix-round verification:
+
+- `npm run typecheck` — passed (`tsc`, exit 0).
+- `npm run build` — passed (Docusaurus production build, exit 0; the same
+  non-failing Node experimental `localStorage` warning was emitted).
+- `git diff --check` — passed (no whitespace errors).
+
 ## Source references checked
 
 - `src/cli.rs`: CLI declarations at lines 31–89; validation/reload behavior at

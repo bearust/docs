@@ -33,12 +33,15 @@ candidate leaves the current runtime running. Health state is preserved for
 unchanged pool names across reloads.
 
 The control plane persists its current runtime configuration in its database.
-At startup, persisted runtime configuration is applied when present. A
-control-plane change is first validated and applied to the live runtime, then
-is persisted; BeaRust attempts to mirror it to the TOML file, but a read-only
-mount does not reject the already-persisted live update. Database-backed policy
-records (such as WAF, IP security, bot, host authentication, and per-host rate
-limits) are distinct from native TOML settings and are refreshed separately.
+At startup, persisted runtime configuration is applied when present. For a
+control-plane runtime change, BeaRust validates the candidate, saves it to the
+database first, and then applies it to the live runtime. If that runtime apply
+fails, it restores the previously persisted configuration and reports the
+failure. After a successful apply, BeaRust attempts to mirror the candidate to
+the TOML file; a read-only mount does not reject the already-persisted live
+update. Database-backed policy records (such as WAF, IP security, bot, host
+authentication, and per-host rate limits) are distinct from native TOML
+settings and are refreshed separately.
 
 ## Ownership and reserved names
 
@@ -50,13 +53,25 @@ pool or route names.
 
 ## Replacement boundaries
 
-Route, pool, health, and policy snapshots can be rebuilt in the runtime.
-The main data listener, control listener, Prometheus listener, HTTP/3 listener,
-and TLS service settings are established during process startup. Treat changes
-to their bind addresses, listener enablement, or TLS material as a process or
-listener replacement operation; certificate activation explicitly requests the
-supervisor to perform that replacement. A `SIGHUP` validates and swaps the
-runtime snapshot, but does not independently rebind every listener.
+Route, pool, health, and policy snapshots can be rebuilt in the runtime. On
+Unix, `SIGHUP` is also a supervised process-replacement path: the supervisor
+loads and validates the candidate TOML and native TLS settings, starts an
+upgrade child with that candidate, and waits for its readiness marker for up to
+five seconds. The upgrade child configures its TCP/TLS service from the
+candidate and receives inherited Pingora listener file descriptors. Once it is
+ready, the supervisor sends `SIGQUIT` to the old child so Pingora drains its
+sessions. An invalid TOML/TLS candidate, a failed spawn, or a child that never
+becomes ready leaves the old child authoritative; an unready replacement is
+killed.
+
+Consequently, changes to the main bind or native TLS are applied through this
+validated replacement rather than an arbitrary in-process rebind. HTTP/3 is
+also constructed at child startup from the candidate `server.http3` and TLS
+settings; its UDP listener is a separate task, and a listener failure is logged
+by that child. The control and dedicated Prometheus listeners are likewise
+created during child startup. Certificate activation explicitly applies the
+runtime configuration and then asks this supervisor to perform the replacement
+so the newly selected TLS material reaches the listener.
 
 Only `NODE_ID`, `CLUSTER_PEERS`, and `CLUSTER_AUTH_TOKEN` override TOML values
 during parsing. See [environment variables](../environment-variables).
