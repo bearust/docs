@@ -23,7 +23,21 @@ const sidebars: SidebarsConfig = {
         'getting-started/troubleshooting',
       ],
     },
-    {type: 'category', label: 'Operate BeaRust', link: {type: 'doc', id: 'intro'}, items: []},
+    {
+      type: 'category',
+      label: 'Operate BeaRust',
+      link: {type: 'doc', id: 'operate/proxy-hosts-and-load-balancing'},
+      items: [
+        'operate/proxy-hosts-and-load-balancing',
+        'operate/tls-and-certificates',
+        'operate/acme-automation',
+        'operate/http3',
+        'operate/waf-and-ip-security',
+        'operate/bot-protection',
+        'operate/rate-limiting',
+        'operate/analytics-and-observability',
+      ],
+    },
     {
       type: 'category',
       label: 'Reference',
