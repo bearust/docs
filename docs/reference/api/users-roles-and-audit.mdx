@@ -1,0 +1,178 @@
+---
+id: api-users-roles-and-audit
+sidebar_position: 5
+---
+
+# Users, roles, sessions, and audit API
+
+Every route on this page requires a session cookie. `POST`, `PATCH`, and
+`DELETE` requests also require the matching `X-CSRF-Token`. These are global
+administrative resources: proxy-host scopes do not authorize them.
+
+## Route table
+
+| Method | Path | Permission | Success | Key failures |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/users` | `users.manage` | `200 User[]` | `401 unauthorized`, `403 forbidden`, `500 database_error` |
+| `POST` | `/api/users` | `users.manage` | `201 User` | `400 invalid_input`, `401`, `403`, `409 duplicate_email`, `500` |
+| `PATCH` | `/api/users/{id}` | `users.manage` | `200 User` | `400`, `401`, `403`, `404`, `409 last_admin`, `500` |
+| `DELETE` | `/api/users/{id}` | `users.manage` | `204` | `401`, `403 self_mutation`, `404`, `409 last_admin`, `500` |
+| `POST` | `/api/users/{id}/sessions/revoke` | `sessions.revoke` | `200` revoked-count object | `400`, `401`, `403`, `404`, `500` |
+| `GET` | `/api/roles` | `roles.manage` | `200 RoleRecord[]` | `401`, `403`, `500 database_error` |
+| `POST` | `/api/roles` | `roles.manage` | `201 RoleDetail` | `400 invalid_input`, `401`, `403`, `409 conflict`, `500` |
+| `GET` | `/api/roles/{id}` | `roles.manage` | `200 RoleDetail` | `400`, `401`, `403`, `404 not_found`, `500` |
+| `PATCH` | `/api/roles/{id}` | `roles.manage` | `200 RoleDetail` | `400`, `401`, `403`, `404`, `409 conflict`, `500` |
+| `DELETE` | `/api/roles/{id}` | `roles.manage` | `204` | `400`, `401`, `403`, `404`, `409 conflict`, `500` |
+| `GET` | `/api/audit-logs` | `audit_logs.read` | `200 AuditLogPage` | `400 invalid_input`, `401`, `403`, `500 database_error` |
+
+`204` from user or role deletion deliberately has no JSON body. Successful
+user changes publish `users.changed`; user role/disabled changes and session
+revocation publish `sessions.changed`; role changes publish `roles.changed`.
+
+## Users and session revocation
+
+Users are serialized as:
+
+```json
+{
+  "id": 8,
+  "email": "operator@example.test",
+  "role": "operator",
+  "created_at": "2026-08-17T00:00:00Z",
+  "disabled": false,
+  "preferred_locale": null
+}
+```
+
+Create a user with exactly `email`, `password`, and `role`. Email is trimmed
+and lowercased; password must be at least 12 characters; role must name an
+existing built-in or custom role. A duplicate email returns `409
+duplicate_email`. Passwords are accepted only for creation and never appear in
+responses or audit details.
+
+```json
+{
+  "email": "operator@example.test",
+  "password": "test-only-password-at-least-12",
+  "role": "operator"
+}
+```
+
+Patch a user with one or both of `role` and `disabled`; an empty patch is
+`400 invalid_input`. An administrator cannot disable themself (`403
+self_mutation`), delete themself (`403 self_mutation`), or revoke their own
+sessions (`403 self_mutation`). The server rejects a role or disabled-state
+change, or a deletion, that would remove the last enabled `admin`, with `409
+last_admin`. This invariant applies atomically to combined user updates.
+
+`POST /api/users/{id}/sessions/revoke` revokes every session for a different,
+existing target and returns:
+
+```json
+{"revoked":2}
+```
+
+The target's next session-authenticated request returns `401`. Revocation does
+not expose session identifiers or token hashes.
+
+## Built-in roles, custom permissions, and scopes
+
+The system roles are `admin`, `operator`, and `viewer`. Built-in role behavior
+is fixed: `admin` has every built-in permission; `operator` reads and writes
+proxy hosts and certificates and reads audit history; `viewer` reads proxy
+hosts, certificates, and audit history. Built-in roles cannot be patched or
+deleted (`409 conflict`).
+
+`GET /api/roles` returns records with `id`, `slug`, `name`, `description`, and
+`system_managed`. `GET`, `POST`, and `PATCH` role details add `permissions` and
+`scopes`:
+
+```json
+{
+  "id": 17,
+  "slug": "host-operator",
+  "name": "Host operator",
+  "description": "Test-only scoped role",
+  "system_managed": false,
+  "permissions": ["proxy_hosts.read", "proxy_hosts.write"],
+  "scopes": [
+    {"permission":"proxy_hosts.read","proxy_host_ids":[42]},
+    {"permission":"proxy_hosts.write","proxy_host_ids":[42]}
+  ]
+}
+```
+
+Create a role with `slug`, `name`, optional `description`, optional
+`permissions`, and optional `scopes`. The slug is normalized to lowercase
+ASCII words joined by hyphens and must be nonempty and at most 64 characters.
+The custom-role write contract accepts these permission keys:
+
+`proxy_hosts.read`, `proxy_hosts.write`, `certificates.read`,
+`certificates.write`, `users.manage`, `roles.manage`, `audit_logs.read`,
+`audit_logs.export`, `system.settings.manage`, `sessions.revoke`, and
+`bot_protection.manage`.
+
+A scope object has exactly `permission` and `proxy_host_ids`; scope permissions
+are only `proxy_hosts.read` or `proxy_hosts.write`, and each listed host ID
+must exist. Duplicate, unknown-host, or invalid scope assignments return `400
+invalid_input`. A duplicate role slug returns `409 conflict`. Patching a
+custom role accepts any subset of `name`, `description`, `permissions`, and
+`scopes`; setting `permissions` or `scopes` replaces that collection.
+
+The complete permission vocabulary also contains `ai_advisor.read`,
+`ai_advisor.request`, `ai_advisor.approve`, `plugins.read`, and
+`plugins.manage`; their API endpoints are documented separately. Do not infer
+that a proxy-host scope applies to them or to any global administrative route.
+
+## Audit logs
+
+`GET /api/audit-logs` accepts these optional query parameters:
+
+| Parameter | Contract |
+| --- | --- |
+| `event` | Exact event filter; empty is ignored. |
+| `actor_id` | Non-negative numeric user ID; empty is ignored. |
+| `from` | RFC 3339 timestamp inclusive lower bound; normalized to UTC. |
+| `to` | RFC 3339 timestamp inclusive upper bound; normalized to UTC. |
+| `q` | Case/database text match against event or details; empty is ignored. |
+| `page` | Integer, default `1`, minimum `1`. |
+| `page_size` | Integer, default `25`, range `1`--`100`. |
+
+Malformed numbers or timestamps return `400 invalid_input`. Results are ordered
+by `created_at` descending and then `id` descending. The response fields are
+exactly `items`, `page`, `page_size`, and `total`; every item contains `id`,
+`actor`, `event`, `details`, and `created_at`.
+
+```json
+{
+  "items": [
+    {
+      "id": 99,
+      "actor": "admin@example.test",
+      "event": "user_created",
+      "details": "target_user_id=8;outcome=success",
+      "created_at": "2026-08-17T00:00:00Z"
+    }
+  ],
+  "page": 1,
+  "page_size": 25,
+  "total": 1
+}
+```
+
+`actor` is the current email when its user still exists, `deleted-user` for a
+deleted user ID, or `system` for a system action. Audit output redacts JSON
+fields and text values named or containing password, token, secret,
+private-key/private_key, credential, or request-body/request_body. The
+redacted value is `[REDACTED]`; submitted request bodies, password hashes, and
+session token hashes are not exposed. Audit publication is best-effort and
+does not change the mutation's HTTP outcome.
+
+## Source pointers
+
+Route handlers: `bearust/src/control_plane/mod.rs`; RBAC roles, permissions,
+and resource contexts: `bearust/src/control_plane/rbac.rs`; payload models:
+`bearust/src/control_plane/models.rs`; audit query, actor labels, ordering, and
+redaction: `bearust/src/control_plane/repository.rs`. Integration coverage is
+in `tests/control_plane_users.rs`, `tests/control_plane_roles.rs`, and
+`tests/control_plane_audit.rs`.

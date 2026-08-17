@@ -1,0 +1,131 @@
+---
+id: api-overview
+sidebar_position: 1
+---
+
+# Control-plane API overview
+
+This is the hand-maintained reference for the control-plane routes currently
+registered by BeaRust. It describes the implemented HTTP contract; it is not
+an OpenAPI document and BeaRust does not generate a schema from these pages.
+
+## Base URL and JSON
+
+The control listener is commonly reached locally at `http://127.0.0.1:8081`.
+All paths below are relative to that listener, for example:
+
+```sh
+curl http://127.0.0.1:8081/api/health
+```
+
+JSON request bodies use `Content-Type: application/json`. Handled application
+errors generally use this envelope, although several authorization and simple
+not-found paths intentionally return only a status:
+
+```json
+{
+  "code": "invalid_input",
+  "message": "A safe human-readable explanation"
+}
+```
+
+Treat `code` as the stable machine-readable value where an endpoint supplies
+one. Do not parse `message`. The API never returns password hashes, session
+tokens, host Basic Auth passwords, uploaded private keys, or an ACME
+Cloudflare token.
+
+`/api` and unmatched `/api/{*path}` requests return `404 Not Found`.
+
+## Sessions and CSRF
+
+BeaRust uses cookie sessions, not bearer tokens. Successful setup initialization
+and login set two one-day cookies:
+
+- `bearust_session` is `HttpOnly`, `Secure`, `SameSite=Lax`, and authenticates
+  the request.
+- `bearust_csrf` is `Secure`, `SameSite=Lax`, readable by browser code, and is
+  only a double-submit CSRF value. It is not an authentication credential.
+
+For a current session, every `POST`, `PUT`, `PATCH`, or `DELETE` below
+`/api/` must send the matching `X-CSRF-Token` header, except the public setup,
+login, and bot-challenge routes. A missing or mismatched CSRF value returns
+`403` with `{"code":"csrf_invalid","message":"CSRF validation failed"}`.
+Sessions minted before the CSRF cookie existed remain compatible only when that
+cookie is absent; new clients must always send it.
+
+Use a throwaway local administrator and a temporary cookie jar when trying the
+API. `curl` does not ignore `Secure`; use an HTTPS control listener for the
+following workflow in a real request. The values are deliberately safe test
+placeholders.
+
+```sh
+base_url='https://127.0.0.1:8081'
+cookie_jar="$(mktemp)"
+
+curl --fail-with-body -k -c "$cookie_jar" \
+  -H 'Content-Type: application/json' \
+  --data '{"email":"admin@example.test","password":"test-password-at-least-12"}' \
+  "$base_url/api/auth/login"
+
+csrf_token="$(awk '$6 == "bearust_csrf" { print $7 }' "$cookie_jar")"
+curl --fail-with-body -k -b "$cookie_jar" \
+  -H "X-CSRF-Token: $csrf_token" \
+  -H 'Content-Type: application/json' \
+  --data '{"preferred_theme":"dark"}' \
+  -X PATCH "$base_url/api/auth/me/theme"
+
+rm -f "$cookie_jar"
+```
+
+Do not put production cookies, setup tokens, passwords, certificate PEM, or
+provider tokens in shell history, tickets, or documentation.
+
+## Public and authenticated boundaries
+
+| Boundary | Routes | Notes |
+| --- | --- | --- |
+| Public | `GET /api/health`, `GET /api/setup/status` | No session is required. |
+| Public mutation, CSRF-exempt | `POST /api/setup/initialize`, `POST /api/auth/login` | Each is separately rate limited by the server. Setup creates the initial administrator only once. |
+| Cookie-aware mutation | `POST /api/auth/logout` | The handler is idempotent and returns `204` even without a session; when a current client sends its CSRF cookie, it must send the matching CSRF header. |
+| Authenticated mutation | All other protected writes | Send the session cookie and CSRF header. |
+| Authenticated read | `/api/auth/me`, preferences/theme, events, and every resource reference page | Authentication and then the endpoint permission are checked. |
+| Outside this task | bot challenge, security, analytics, AI, cluster, and plugin routes | They have their own API pages. |
+
+## Authorization and scopes
+
+The server authorizes a permission against either the global resource or a
+specific proxy host. `proxy_hosts.read` and `proxy_hosts.write` can be scoped
+to selected host IDs for a custom role. A scoped grant does not grant a global
+load-balancer write, certificate access, user administration, role
+administration, session revocation, or audit access.
+
+The stable permission keys are:
+
+`proxy_hosts.read`, `proxy_hosts.write`, `certificates.read`,
+`certificates.write`, `users.manage`, `roles.manage`, `audit_logs.read`,
+`audit_logs.export`, `system.settings.manage`, `sessions.revoke`,
+`bot_protection.manage`, `ai_advisor.read`, `ai_advisor.request`,
+`ai_advisor.approve`, `plugins.read`, and `plugins.manage`.
+
+Endpoint tables identify the permission actually enforced by the handler.
+
+## Pagination, empty responses, and realtime
+
+`GET /api/audit-logs` uses `page` (default `1`, minimum `1`) and `page_size`
+(default `25`, range `1`--`100`). Its page response always has `items`,
+`page`, `page_size`, and `total`. A `204 No Content` response has no JSON body;
+do not call a JSON parser on it.
+
+`GET /api/events` is an authenticated Server-Sent Events stream. It sends an
+initial `ready` event, emits process-local events, sends heartbeat comments,
+and closes when session revalidation fails. `Last-Event-ID` is deliberately
+ignored: there is no replay guarantee. Mutation pages identify the resource
+change events where they are useful, but clients must be prepared to refetch
+after reconnecting.
+
+## Source pointers
+
+- Route registration and CSRF guard: `bearust/src/control_plane/mod.rs`
+- Session/login implementation: `bearust/src/control_plane/auth.rs`
+- Request and response models: `bearust/src/control_plane/models.rs`
+- Browser client types: `bearust/frontend/src/api.ts`
