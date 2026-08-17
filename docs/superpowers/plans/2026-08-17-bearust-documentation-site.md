@@ -145,6 +145,12 @@ implementation plans remain under `docs/superpowers/` and are excluded.
 - Excludes `docs/superpowers/**` from the docs plugin so internal design material is not public.
 - Provides `defaultLocale: 'en'` and `locales: ['en']` for future translation work.
 
+Because this shell task precedes the content tasks, sidebar category labels and
+homepage cards may temporarily target the existing `intro` page so the site
+remains buildable between commits. The content tasks must replace every such
+temporary target with its final document ID before the final audit; temporary
+targets are not acceptable in the completed site.
+
 - [ ] **Step 1: Remove starter navigation and content references**
 
 Remove the `Tutorial`, `Blog`, Facebook/Docusaurus links, starter footer labels,
@@ -196,8 +202,9 @@ rewriting the theme.
 - [ ] **Step 7: Update site maintenance README**
 
 Document Node.js `>=20`, `npm install`, `npm run start`, `npm run typecheck`,
-`npm run validate:docs`, `npm run build`, source-repository location, and the
-English-first translation workflow.
+`npm run build`, source-repository location, and the English-first translation
+workflow. The `npm run validate:docs` command is added to this README by Task 9
+at the same time the validator is registered.
 
 - [ ] **Step 8: Verify the shell**
 
