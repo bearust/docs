@@ -45,9 +45,23 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Reference',
-      link: {type: 'doc', id: 'intro'},
+      link: {type: 'doc', id: 'reference/cli'},
       items: [
-        {type: 'category', label: 'Configuration', link: {type: 'doc', id: 'intro'}, items: []},
+        'reference/cli',
+        {
+          type: 'category',
+          label: 'Configuration',
+          link: {type: 'doc', id: 'reference/configuration/overview'},
+          items: [
+            'reference/configuration/overview',
+            'reference/configuration/server-and-listeners',
+            'reference/configuration/routing-and-upstreams',
+            'reference/configuration/security-and-observability',
+            'reference/configuration/plugins-and-cluster',
+          ],
+        },
+        'reference/environment-variables',
+        'reference/metrics-and-errors',
         {type: 'category', label: 'Control-plane API', link: {type: 'doc', id: 'intro'}, items: []},
       ],
     },
