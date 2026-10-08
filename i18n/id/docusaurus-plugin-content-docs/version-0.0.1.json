@@ -11,9 +11,9 @@
     "message": "Mulai",
     "description": "The label for category 'Get started' in sidebar 'docsSidebar'"
   },
-  "sidebar.docsSidebar.category.Operate BeaRust": {
-    "message": "Mengoperasikan BeaRust",
-    "description": "The label for category 'Operate BeaRust' in sidebar 'docsSidebar'"
+  "sidebar.docsSidebar.category.Operate Bearust": {
+    "message": "Mengoperasikan Bearust",
+    "description": "The label for category 'Operate Bearust' in sidebar 'docsSidebar'"
   },
   "sidebar.docsSidebar.category.Reference": {
     "message": "Referensi",
@@ -22,10 +22,6 @@
   "sidebar.docsSidebar.category.Configuration": {
     "message": "Konfigurasi",
     "description": "The label for category 'Configuration' in sidebar 'docsSidebar'"
-  },
-  "sidebar.docsSidebar.category.Control-plane API": {
-    "message": "API Control-Plane",
-    "description": "The label for category 'Control-plane API' in sidebar 'docsSidebar'"
   },
   "sidebar.docsSidebar.category.Contributing": {
     "message": "Berkontribusi",

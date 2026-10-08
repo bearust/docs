@@ -12,7 +12,7 @@ export default function Home(): ReactNode {
   return (
     <Layout
       title="Documentation"
-      description="BeaRust: a Rust-native reverse proxy with a built-in load balancer, WAF, analytics, and free multi-node clustering.">
+      description="Bearust: a Rust-native reverse proxy with a built-in load balancer, WAF, analytics, and free multi-node clustering.">
       <main>
         <section className={styles.hero}>
           <div className={styles.heroInner}>
@@ -20,7 +20,7 @@ export default function Home(): ReactNode {
             <div>
               <Heading as="h1">A reverse proxy that grows with you.</Heading>
               <p className={styles.lede}>
-                BeaRust is a Rust-native reverse proxy and load balancer that installs with one
+                Bearust is a Rust-native reverse proxy and load balancer that installs with one
                 Docker Compose command. A built-in WAF, traffic analytics, and free multi-node
                 clustering are there when you need them — off by default, so every deployment
                 starts small and predictable.
@@ -29,7 +29,7 @@ export default function Home(): ReactNode {
                 <Link className="button button--primary button--lg" to="/docs/introduction/what-is-bearust">
                   Read the introduction
                 </Link>
-                <a className="button button--outline button--lg" href="https://github.com/rizalord/bearust">
+                <a className="button button--outline button--lg" href="https://github.com/bearust/bearust">
                   View source
                 </a>
               </div>
@@ -44,7 +44,7 @@ export default function Home(): ReactNode {
           <div className={styles.pathGrid}>
             <Link className={styles.pathCard} to="/docs/getting-started/installation">
               <span className={styles.cardLabel}>Deploy</span>
-              <Heading as="h3">Install BeaRust</Heading>
+              <Heading as="h3">Install Bearust</Heading>
               <p>Bring up the production-ready Docker Compose stack and verify its health.</p>
             </Link>
             <Link className={styles.pathCard} to="/docs/getting-started/first-proxy">
@@ -55,7 +55,7 @@ export default function Home(): ReactNode {
             <Link className={styles.pathCard} to="/docs/operate/high-availability">
               <span className={styles.cardLabel}>Scale out</span>
               <Heading as="h3">Cluster multiple nodes</Heading>
-              <p>Run BeaRust as a Raft-backed cluster so control-plane configuration stays in sync.</p>
+              <p>Run Bearust as a Raft-backed cluster so control-plane configuration stays in sync.</p>
             </Link>
           </div>
         </section>

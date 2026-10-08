@@ -4,7 +4,7 @@ sidebar_position: 5
 
 # Troubleshooting
 
-Run diagnostics from the BeaRust checkout unless a command says otherwise. Redact passwords, setup tokens, API keys, and private keys before sharing any output.
+Run diagnostics from the Bearust checkout unless a command says otherwise. Redact passwords, setup tokens, API keys, and private keys before sharing any output.
 
 ## The container health check stays unhealthy
 
@@ -30,7 +30,7 @@ curl http://127.0.0.1:8081/api/setup/status
 docker compose logs --tail=100 bearust
 ```
 
-Expect `{"initialized":false}` before setup. If no deterministic `BEARUST_SETUP_TOKEN` was supplied for the SQLite default, BeaRust generates a token in its persistent data area and logs the token-file event (not the token value). Retrieve it only on a trusted host with `docker compose exec bearust cat /data/setup-token`. If status is already initialized, setup cannot be repeated; use an existing administrator instead of trying a new setup token.
+Expect `{"initialized":false}` before setup. If no deterministic `BEARUST_SETUP_TOKEN` was supplied for the SQLite default, Bearust generates a token in its persistent data area and logs the token-file event (not the token value). Retrieve it only on a trusted host with `docker compose exec bearust cat /data/setup-token`. If status is already initialized, setup cannot be repeated; use an existing administrator instead of trying a new setup token.
 
 ## Named volume state is stale
 

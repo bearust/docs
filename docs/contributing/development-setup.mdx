@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Development setup
 
-These instructions describe [`rizalord/bearust@c8ed147`](https://github.com/rizalord/bearust/tree/c8ed147cd84efc71bda8b8473486906b5616a505). The supported zero-prerequisite path is Docker Compose; native development needs Rust **1.97.1**, Cargo, clang, cmake, make, perl, pkg-config, and Node **22** for the dashboard. The Rust toolchain is pinned in [`rust-toolchain.toml`](https://github.com/rizalord/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/rust-toolchain.toml).
+These instructions describe [`bearust/bearust@c8ed147`](https://github.com/bearust/bearust/tree/c8ed147cd84efc71bda8b8473486906b5616a505). The supported zero-prerequisite path is Docker Compose; native development needs Rust **1.97.1**, Cargo, clang, cmake, make, perl, pkg-config, and Node **22** for the dashboard. The Rust toolchain is pinned in [`rust-toolchain.toml`](https://github.com/bearust/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/rust-toolchain.toml).
 
 ## Start the development stack
 
@@ -35,7 +35,7 @@ npm --prefix frontend run dev:demo
 npm --prefix frontend test
 ```
 
-`dev:api` uses Vite's API proxy target (default `http://localhost:8081`); `dev:demo` sets Vite demo mode. Vite uses strict port `5183` in both modes. See [`DEVELOPMENT.md`](https://github.com/rizalord/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/DEVELOPMENT.md) and [`frontend/vite.config.ts`](https://github.com/rizalord/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/frontend/vite.config.ts).
+`dev:api` uses Vite's API proxy target (default `http://localhost:8081`); `dev:demo` sets Vite demo mode. Vite uses strict port `5183` in both modes. See [`DEVELOPMENT.md`](https://github.com/bearust/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/DEVELOPMENT.md) and [`frontend/vite.config.ts`](https://github.com/bearust/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/frontend/vite.config.ts).
 
 ## Production Compose smoke prerequisites
 

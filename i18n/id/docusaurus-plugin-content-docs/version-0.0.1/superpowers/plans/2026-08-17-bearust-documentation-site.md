@@ -1,17 +1,17 @@
-# BeaRust Documentation Site Implementation Plan
+# Bearust Documentation Site Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace the starter Docusaurus site with an English-first, multi-audience BeaRust documentation site covering current user workflows, complete active API/reference contracts, and contributor architecture.
+**Goal:** Replace the starter Docusaurus site with an English-first, multi-audience Bearust documentation site covering current user workflows, complete active API/reference contracts, and contributor architecture.
 
-**Architecture:** Keep Docusaurus Classic as the static-site framework. Use an explicit sidebar and focused Markdown/MDX pages grouped into Introduction, Get started, Operate, Reference, Contributing, and Roadmap. Curate API/configuration content manually from the BeaRust source boundary `rizalord/bearust@c8ed147`, and add a small docs validation script for starter-content, unfinished-content, and source-route coverage checks.
+**Architecture:** Keep Docusaurus Classic as the static-site framework. Use an explicit sidebar and focused Markdown/MDX pages grouped into Introduction, Get started, Operate, Reference, Contributing, and Roadmap. Curate API/configuration content manually from the Bearust source boundary `bearust/bearust@c8ed147`, and add a small docs validation script for starter-content, unfinished-content, and source-route coverage checks.
 
 **Tech Stack:** Docusaurus `3.10.2`, React `19`, TypeScript `6`, MDX, `prism-react-renderer`, Node.js `>=20`, npm, and the existing `bearust` Rust source repository as the documentation source of truth.
 
 ## Global Constraints
 
 - Documentation default locale is English; Indonesian and Japanese are future locales and are not activated until translated content is available.
-- Documentation describes behavior implemented on `rizalord/bearust` `main` at commit `c8ed147` (2026-08-16); planned behavior is isolated to the roadmap.
+- Documentation describes behavior implemented on `bearust/bearust` `main` at commit `c8ed147` (2026-08-16); planned behavior is isolated to the roadmap.
 - The API reference covers every active route registered by `src/control_plane/mod.rs`, plus `/metrics` behavior.
 - Each API entry includes method/path, authentication, permission/scope, request, success response, errors, side effects, a safe `curl` example, and a source pointer.
 - Configuration reference includes type, default, required/optional status, valid values, dependencies, operational impact, example, and validation command where applicable.
@@ -29,13 +29,13 @@
 
 ### Site shell and tooling
 
-- Modify: `docusaurus.config.ts` — BeaRust metadata, links, strict link checking, docs exclusion, and i18n configuration.
+- Modify: `docusaurus.config.ts` — Bearust metadata, links, strict link checking, docs exclusion, and i18n configuration.
 - Modify: `sidebars.ts` — explicit public information architecture.
-- Modify: `src/pages/index.tsx` — BeaRust homepage and task entry points.
+- Modify: `src/pages/index.tsx` — Bearust homepage and task entry points.
 - Modify: `src/pages/index.module.css` — homepage layout and responsive styling.
 - Modify: `src/css/custom.css` — global docs theme, code blocks, admonitions, links, and brand tokens.
-- Modify: `static/img/logo.svg` — BeaRust logo mark used by the navbar.
-- Modify: `static/img/favicon.ico` or replace with a BeaRust favicon asset — site favicon.
+- Modify: `static/img/logo.svg` — Bearust logo mark used by the navbar.
+- Modify: `static/img/favicon.ico` or replace with a Bearust favicon asset — site favicon.
 - Delete: `src/components/HomepageFeatures/index.tsx` and `src/components/HomepageFeatures/styles.module.css` — unused starter homepage component.
 - Delete: `src/pages/markdown-page.mdx` — unused starter page.
 - Modify: `README.md` — local development, build, validation, source-sync, and translation instructions for the docs site.
@@ -49,7 +49,7 @@ implementation plans remain under `docs/superpowers/` and are excluded.
 
 #### Introduction and getting started
 
-- Modify: `docs/intro.mdx` — BeaRust introduction and entry-point links.
+- Modify: `docs/intro.mdx` — Bearust introduction and entry-point links.
 - Create: `docs/introduction/what-is-bearust.mdx` — product positioning and core use cases.
 - Create: `docs/introduction/architecture.mdx` — high-level data/control-plane architecture.
 - Create: `docs/introduction/feature-status.mdx` — implemented, optional, disabled-by-default, experimental, and planned status.
@@ -118,7 +118,7 @@ implementation plans remain under `docs/superpowers/` and are excluded.
 - Delete: `blog/2019-05-29-long-blog-post.mdx`.
 - Delete: `blog/2021-08-01-mdx-blog-post.mdx`.
 - Delete: `blog/2021-08-26-welcome/index.mdx` and its starter image directory.
-- Delete: `blog/authors.yml` and `blog/tags.yml` if the blog is removed from the navigation and no BeaRust blog is introduced.
+- Delete: `blog/authors.yml` and `blog/tags.yml` if the blog is removed from the navigation and no Bearust blog is introduced.
 - Delete: `docs/tutorial-basics/` and `docs/tutorial-extras/` starter pages and images.
 - Delete: Docusaurus starter social card and illustration assets that remain unused after branding.
 
@@ -157,11 +157,11 @@ Remove the `Tutorial`, `Blog`, Facebook/Docusaurus links, starter footer labels,
 starter hero copy, and starter page imports. Keep the existing Docusaurus
 Classic preset and search-free dependency footprint.
 
-- [ ] **Step 2: Configure BeaRust site metadata**
+- [ ] **Step 2: Configure Bearust site metadata**
 
-Set the title to `BeaRust`, use a concise reverse-proxy/load-balancer tagline,
-set `favicon` and navbar logo to BeaRust assets, and point the GitHub link to
-`https://github.com/rizalord/bearust`. Remove the starter `editUrl` values
+Set the title to `Bearust`, use a concise reverse-proxy/load-balancer tagline,
+set `favicon` and navbar logo to Bearust assets, and point the GitHub link to
+`https://github.com/bearust/bearust`. Remove the starter `editUrl` values
 because the docs site is separate from the source repository.
 
 Use environment-backed deployment values with local defaults, for example:
@@ -187,14 +187,14 @@ grouped by domain and the contributor group separate from operations.
 
 - [ ] **Step 5: Build the homepage entry points**
 
-Replace the starter homepage with a BeaRust hero, a short product statement,
+Replace the starter homepage with a Bearust hero, a short product statement,
 three CTA cards/links for installation, first proxy, and contribution, and
 secondary links to API/configuration reference. Keep the layout responsive and
 avoid introducing a component library dependency.
 
 - [ ] **Step 6: Establish brand and readability tokens**
 
-Update global CSS with BeaRust brand colors, readable body/code contrast,
+Update global CSS with Bearust brand colors, readable body/code contrast,
 admonition styling, table overflow handling, link states, and responsive
 spacing. Use existing Docusaurus theme variables where possible instead of
 rewriting the theme.
@@ -239,7 +239,7 @@ links and no route for `docs/superpowers/**`.
 
 - [ ] **Step 1: Write the product and architecture introductions**
 
-Explain BeaRust as a configuration-driven reverse proxy/load balancer with a
+Explain Bearust as a configuration-driven reverse proxy/load balancer with a
 Rust data plane, Axum control plane, bundled management UI, optional security,
 analytics, cluster, plugin, AI, and HTTP/3 capabilities. Mark optional or
 disabled-by-default systems explicitly. Link to the detailed architecture and
@@ -930,5 +930,5 @@ requires the user's repository setup.
   the spec and the API tasks.
 - The plan uses `npm run typecheck`, `npm run validate:docs`, and `npm run build`
   consistently as docs-site gates.
-- The plan does not add an OpenAPI dependency or change the BeaRust source.
+- The plan does not add an OpenAPI dependency or change the Bearust source.
 - The plan does not initialize or assume Git metadata in `bearust-docs`.

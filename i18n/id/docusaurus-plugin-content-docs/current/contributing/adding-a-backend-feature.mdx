@@ -6,7 +6,7 @@ sidebar_position: 8
 
 Use this sequence to keep the control plane, persistent state, and data plane coherent.
 
-1. **Identify ownership.** Start in the narrow owning module under [`src/`](https://github.com/rizalord/bearust/tree/c8ed147cd84efc71bda8b8473486906b5616a505/src): config/runtime, proxy, control plane/repository, policy store, or cluster command gateway.
+1. **Identify ownership.** Start in the narrow owning module under [`src/`](https://github.com/bearust/bearust/tree/c8ed147cd84efc71bda8b8473486906b5616a505/src): config/runtime, proxy, control plane/repository, policy store, or cluster command gateway.
 2. **Model/configure the feature.** Add typed configuration in `src/config/` and/or control-plane models. Extend `Config::validate` for configuration invariants.
 3. **Add a migration for durable state.** Create the next ordered SQL migration in `migrations/`; implement access through `control_plane/repository.rs`. Do not rely on SQLite-specific behavior if PostgreSQL/MySQL must support it.
 4. **Implement behavior at each boundary.** Add repository and authenticated API behavior, audit/realtime effects, and runtime synchronization. If traffic behavior changes, publish an immutable runtime or policy-store snapshot before requests observe it.

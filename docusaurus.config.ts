@@ -6,7 +6,7 @@ const siteUrl = process.env.DOCS_SITE_URL ?? 'http://localhost:3000';
 const baseUrl = process.env.DOCS_BASE_URL ?? '/';
 
 const config: Config = {
-  title: 'BeaRust',
+  title: 'Bearust',
   tagline: 'The Rust-powered reverse proxy, load balancer, and WAF.',
   favicon: 'img/favicon.png',
 
@@ -93,9 +93,9 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'BeaRust',
+      title: 'Bearust',
       logo: {
-        alt: 'BeaRust logo',
+        alt: 'Bearust logo',
         src: 'img/logo.png',
       },
       items: [
@@ -117,7 +117,7 @@ const config: Config = {
           label: 'Blog',
         },
         {
-          href: 'https://github.com/rizalord/bearust/discussions',
+          href: 'https://github.com/bearust/bearust/discussions',
           position: 'left',
           label: 'Community',
         },
@@ -130,7 +130,7 @@ const config: Config = {
           position: 'right',
         },
         {
-          href: 'https://github.com/rizalord/bearust',
+          href: 'https://github.com/bearust/bearust',
           label: 'GitHub',
           position: 'right',
         },
@@ -161,11 +161,11 @@ const config: Config = {
           items: [
             {
               label: 'GitHub Discussions',
-              href: 'https://github.com/rizalord/bearust/discussions',
+              href: 'https://github.com/bearust/bearust/discussions',
             },
             {
               label: 'Issues',
-              href: 'https://github.com/rizalord/bearust/issues',
+              href: 'https://github.com/bearust/bearust/issues',
             },
           ],
         },
@@ -174,16 +174,16 @@ const config: Config = {
           items: [
             {
               label: 'Source code',
-              href: 'https://github.com/rizalord/bearust',
+              href: 'https://github.com/bearust/bearust',
             },
             {
-              label: 'Docker Hub',
-              href: 'https://hub.docker.com/r/rizalord/bearust',
+              label: 'Container Images',
+              href: 'https://github.com/bearust/bearust/pkgs/container/bearust',
             },
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} BeaRust contributors.`,
+      copyright: `Copyright © ${new Date().getFullYear()} Bearust contributors.`,
     },
     prism: {
       theme: prismThemes.github,

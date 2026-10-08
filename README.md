@@ -1,6 +1,6 @@
-# BeaRust documentation
+# Bearust documentation
 
-This repository contains the English-first documentation site for [BeaRust](https://github.com/rizalord/bearust), a Rust-native reverse proxy, load balancer, and WAF. The BeaRust application source lives in its own repository; keep application changes and documentation changes in their respective repositories.
+This repository contains the English-first documentation site for [Bearust](https://github.com/bearust/bearust), a Rust-native reverse proxy, load balancer, and WAF. The Bearust application source lives in its own repository; keep application changes and documentation changes in their respective repositories.
 
 ## Requirements
 
@@ -28,7 +28,7 @@ npm run validate:docs
 npm run build
 ```
 
-`npm run validate:docs` checks the public `docs/` corpus for starter content, unfinished-content markers, required pages, and route coverage against the sibling BeaRust source repository's control-plane router (set `BEARUST_SOURCE_DIR` if that repository is not a sibling of this checkout). `npm run build` generates the static site in `build/`.
+`npm run validate:docs` checks the public `docs/` corpus for starter content, unfinished-content markers, required pages, and route coverage against the sibling Bearust source repository's control-plane router (set `BEARUST_SOURCE_DIR` if that repository is not a sibling of this checkout). `npm run build` generates the static site in `build/`.
 
 ## Translation workflow
 

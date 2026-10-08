@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Validates the public docs/ corpus for BeaRust documentation.
+// Validates the public docs/ corpus for Bearust documentation.
 //
 // Checks performed:
 //  1. Recursively reads public docs/ Markdown/MDX, excluding docs/superpowers/

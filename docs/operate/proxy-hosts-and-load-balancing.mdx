@@ -8,7 +8,7 @@ Use native TOML routes for the data-plane routes that ship with a deployment. Us
 
 ## Match a host and path
 
-BeaRust resolves a request by host and path prefix. Define the more specific path before the fallback only for human readability: the resolver selects the matching prefix, so `/v1` can route differently from `/` on the same host.
+Bearust resolves a request by host and path prefix. Define the more specific path before the fallback only for human readability: the resolver selects the matching prefix, so `/v1` can route differently from `/` on the same host.
 
 ```toml
 [[upstream_pools]]
@@ -46,11 +46,11 @@ After validating and atomically replacing the mounted configuration, reload the 
 
 ## Select healthy backends
 
-`round_robin` rotates through eligible backends. `least_connections` chooses the eligible backend with the fewest in-flight requests. `plugin` permits a reviewed `balance.select` plugin to nominate a healthy candidate; an unavailable, invalid, or unhealthy plugin selection falls back to BeaRust's normal selection.
+`round_robin` rotates through eligible backends. `least_connections` chooses the eligible backend with the fewest in-flight requests. `weighted` selects in proportion to each backend's configured `weight`. `adaptive_weight` starts from `weight` and shifts traffic toward backends with lower observed response times. `ip_hash` hashes a stable client identity so a client stays on one backend while the healthy set is unchanged. `plugin` permits a reviewed `balance.select` plugin to nominate a healthy candidate; an unavailable, invalid, or unhealthy plugin selection falls back to Bearust's normal selection.
 
 TCP checks test connectivity. HTTP checks also require `health_path`. The health supervisor uses the global `[health]` interval, timeout, and healthy/unhealthy thresholds. A backend begins as ineligible until it passes active health checks.
 
-`connect_timeout_seconds` bounds connection establishment and `request_timeout_seconds` bounds the upstream request. When connection setup fails, BeaRust excludes that attempted backend and retries another eligible backend. If no eligible backend remains, the request cannot be proxied and the data plane returns `503`.
+`connect_timeout_seconds` bounds connection establishment and `request_timeout_seconds` bounds the upstream request. When connection setup fails, Bearust excludes that attempted backend and retries another eligible backend. If no eligible backend remains, the request cannot be proxied and the data plane returns `503`.
 
 With `passive_health = true`, failed connections and `5xx` responses count toward passive failure handling; active health checks remain the recovery mechanism. Enable passive health only after observing the normal error rate, because an application-generated `5xx` can temporarily remove a backend from eligibility.
 

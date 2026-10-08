@@ -25,22 +25,22 @@
   },
   "link.item.label.GitHub Discussions": {
     "message": "Diskusi GitHub",
-    "description": "The label of footer link with label=GitHub Discussions linking to https://github.com/rizalord/bearust/discussions"
+    "description": "The label of footer link with label=GitHub Discussions linking to https://github.com/bearust/bearust/discussions"
   },
   "link.item.label.Issues": {
     "message": "Laporan Masalah",
-    "description": "The label of footer link with label=Issues linking to https://github.com/rizalord/bearust/issues"
+    "description": "The label of footer link with label=Issues linking to https://github.com/bearust/bearust/issues"
   },
   "link.item.label.Source code": {
     "message": "Kode sumber",
-    "description": "The label of footer link with label=Source code linking to https://github.com/rizalord/bearust"
+    "description": "The label of footer link with label=Source code linking to https://github.com/bearust/bearust"
   },
-  "link.item.label.Docker Hub": {
-    "message": "Docker Hub",
-    "description": "The label of footer link with label=Docker Hub linking to https://hub.docker.com/r/rizalord/bearust"
+  "link.item.label.Container Images": {
+    "message": "Image Kontainer",
+    "description": "The label of footer link with label=Container Images linking to https://github.com/bearust/bearust/pkgs/container/bearust"
   },
   "copyright": {
-    "message": "Hak cipta © 2026 Kontributor BeaRust.",
+    "message": "Hak cipta © 2026 Kontributor Bearust.",
     "description": "The footer copyright"
   }
 }

@@ -4,11 +4,11 @@ sidebar_position: 11
 
 # WASM plugins
 
-WASM plugins are optional and disabled by default. Enable them only after deciding which plugin sources, signing keys, and capabilities you trust. BeaRust loads each plugin from an immediate child directory of the configured plugin directory; it does not recursively discover nested plugin folders.
+WASM plugins are optional and disabled by default. Enable them only after deciding which plugin sources, signing keys, and capabilities you trust. Bearust loads each plugin from an immediate child directory of the configured plugin directory; it does not recursively discover nested plugin folders.
 
 ## Prepare a plugin package
 
-Each child directory needs a `plugin.toml` manifest and the `.wasm` module named by its `module` field. The manifest identifies the plugin, ABI version, declared capabilities, and `[limits]`. Start from the [plugin authoring guide](https://github.com/rizalord/bearust/blob/main/docs/PLUGIN_AUTHORING.md) for the ABI exports, capability-specific input/output contracts, and manifest validation rules.
+Each child directory needs a `plugin.toml` manifest and the `.wasm` module named by its `module` field. The manifest identifies the plugin, ABI version, declared capabilities, and `[limits]`. Start from the [plugin authoring guide](https://github.com/bearust/bearust/blob/main/docs/PLUGIN_AUTHORING.md) for the ABI exports, capability-specific input/output contracts, and manifest validation rules.
 
 Plugin execution is sandboxed: plugins receive only host-provided data and do not receive filesystem, network, or WASI access. That sandbox does not make an unreviewed plugin safe. A capability can still affect request handling within its defined hook, so review the manifest and module as privileged operational input. The available hooks include health checks, WAF detection, request/response transforms, WAF-block notifications, and load-balancer selection; enable only the capabilities your deployment needs.
 

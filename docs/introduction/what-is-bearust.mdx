@@ -2,20 +2,20 @@
 sidebar_position: 1
 ---
 
-# What is BeaRust?
+# What is Bearust?
 
-BeaRust is an open-source reverse proxy, load balancer, and Web Application Firewall (WAF), built in Rust
+Bearust is an open-source reverse proxy, load balancer, and Web Application Firewall (WAF), built in Rust
 and packaged as a single Docker Compose stack.
 
 The short version: install it with one Docker Compose command, manage it from a browser-based UI, and never
 have to spelunk a config file for routine changes. Underneath that simple install is a real load balancer
 with multiple algorithms, a built-in WAF, IP and bot security, rate limiting, traffic analytics, and free
-multi-node clustering. BeaRust's Rust data plane exists for the same reason people choose Rust for this kind
+multi-node clustering. Bearust's Rust data plane exists for the same reason people choose Rust for this kind
 of software: predictable performance and memory safety, without a garbage collector in the request path.
 
 ## What actually runs
 
-BeaRust ships as one process with two listeners. A Rust data plane (built on Pingora) serves HTTP/1.1 and
+Bearust ships as one process with two listeners. A Rust data plane (built on Pingora) serves HTTP/1.1 and
 HTTP/2 traffic: it matches the request host and path to a route, picks a healthy backend from that route's
 upstream pool, and forwards the request. An Axum control plane exposes an authenticated management API, and
 the bundled browser UI is a client of that same API — there is no separate backend to run.
@@ -31,7 +31,7 @@ the bundled browser UI is a client of that same API — there is no separate bac
 ## What's optional, and why that matters
 
 Security controls (WAF, IP rules, bot protection, rate limiting), analytics, multi-node clustering, WASM
-plugins, and the AI advisor are real, but none of them are switched on just because BeaRust is running. Each
+plugins, and the AI advisor are real, but none of them are switched on just because Bearust is running. Each
 is configuration- or environment-driven — the AI advisor, for instance, stays disabled until you supply both
 a provider URL and an API key. This is deliberate: a new deployment should start as a small, predictable
 proxy, and you decide when to add depth. See [feature status](./feature-status) for exactly what's on by
@@ -40,7 +40,7 @@ default versus opt-in, [architecture](./architecture) for where each subsystem r
 
 ## Get started
 
-1. [Install BeaRust](../getting-started/installation) — the quick-start section needs no source checkout,
+1. [Install Bearust](../getting-started/installation) — the quick-start section needs no source checkout,
    just a published Docker image.
 2. [Create the first administrator](../getting-started/first-time-setup).
 3. [Define an upstream pool and route](../getting-started/first-proxy).

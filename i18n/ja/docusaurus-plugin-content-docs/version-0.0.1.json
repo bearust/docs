@@ -11,9 +11,9 @@
     "message": "スタートガイド",
     "description": "The label for category 'Get started' in sidebar 'docsSidebar'"
   },
-  "sidebar.docsSidebar.category.Operate BeaRust": {
-    "message": "BeaRust の運用",
-    "description": "The label for category 'Operate BeaRust' in sidebar 'docsSidebar'"
+  "sidebar.docsSidebar.category.Operate Bearust": {
+    "message": "Bearust の運用",
+    "description": "The label for category 'Operate Bearust' in sidebar 'docsSidebar'"
   },
   "sidebar.docsSidebar.category.Reference": {
     "message": "リファレンス",
@@ -22,10 +22,6 @@
   "sidebar.docsSidebar.category.Configuration": {
     "message": "設定",
     "description": "The label for category 'Configuration' in sidebar 'docsSidebar'"
-  },
-  "sidebar.docsSidebar.category.Control-plane API": {
-    "message": "コントロールプレーン API",
-    "description": "The label for category 'Control-plane API' in sidebar 'docsSidebar'"
   },
   "sidebar.docsSidebar.category.Contributing": {
     "message": "コントリビューション",

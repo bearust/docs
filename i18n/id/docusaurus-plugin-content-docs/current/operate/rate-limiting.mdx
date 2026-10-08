@@ -4,24 +4,24 @@ sidebar_position: 7
 
 # Rate limiting
 
-BeaRust uses a token bucket per policy key. `capacity` is the initial burst and maximum stored tokens; `refill_per_second` replenishes tokens over monotonic elapsed time. Rate limiting is disabled and monitor-only by default.
+Bearust uses a token bucket per policy key. `capacity` is the initial burst and maximum stored tokens; `refill_per_second` replenishes tokens over monotonic elapsed time. Rate limiting is disabled and monitor-only by default.
 
 ## Select a policy and scope
 
 Set `enabled`, `action`, `capacity`, `refill_per_second`, and `key_scope` through the host policy workflow. `proxy_host_ip` shares a bucket for one client IP on one proxy host. `proxy_host_path_ip` further separates buckets by request path, which can protect a sensitive endpoint but creates more buckets and can dilute a host-wide limit.
 
-Use monitor mode first. A limited monitor-mode request is observed but is not rejected. In block mode, a depleted bucket receives `429 Too Many Requests` with `Retry-After` and `Cache-Control: no-store` response headers. The remaining-token value is retained for BeaRust telemetry and internal decisions, not returned as a client response header.
+Use monitor mode first. A limited monitor-mode request is observed but is not rejected. In block mode, a depleted bucket receives `429 Too Many Requests` with `Retry-After` and `Cache-Control: no-store` response headers. The remaining-token value is retained for Bearust telemetry and internal decisions, not returned as a client response header.
 
 **Verify:** apply a deliberately small policy such as capacity `2` and refill `1` per second to a non-production host. In monitor mode, make three quick requests and confirm the third is recorded as limited while it still reaches the upstream. Change only the action to block; the third request should return `429` with `Retry-After` and `Cache-Control: no-store`.
 
 ## Resolve the client IP safely
 
-BeaRust uses forwarding headers for client identity only when the direct peer is in `server.trusted_proxy_cidrs`. For all other peers, it uses the direct peer address. List only CIDRs operated by your trusted ingress/load balancer; trusting a public range lets callers forge `X-Forwarded-For` and evade or target limits.
+Bearust uses forwarding headers for client identity only when the direct peer is in `server.trusted_proxy_cidrs`. For all other peers, it uses the direct peer address. List only CIDRs operated by your trusted ingress/load balancer; trusting a public range lets callers forge `X-Forwarded-For` and evade or target limits.
 
 **Verify:** send a request directly with a forged `X-Forwarded-For`; its bucket should still be keyed by the direct peer. Repeat through a configured trusted proxy and confirm that the intended client address receives the policy.
 
 ## Update without listener restart
 
-Per-host rate-limit policy changes are reloaded into the runtime store and do not require restarting the data-plane listener. BeaRust clears buckets for the updated host so the new capacity and refill policy starts cleanly; treat a policy update as a live traffic change and keep a rollback value ready.
+Per-host rate-limit policy changes are reloaded into the runtime store and do not require restarting the data-plane listener. Bearust clears buckets for the updated host so the new capacity and refill policy starts cleanly; treat a policy update as a live traffic change and keep a rollback value ready.
 
 **Verify:** update a test host's policy through the authenticated control plane while traffic continues. New requests should show the new behavior without listener downtime; restore the former policy and confirm recovery.

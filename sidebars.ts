@@ -25,7 +25,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Operate BeaRust',
+      label: 'Operate Bearust',
       link: {type: 'doc', id: 'operate/proxy-hosts-and-load-balancing'},
       items: [
         'operate/proxy-hosts-and-load-balancing',

@@ -58,7 +58,7 @@ later than `to`; `command` is at most 4,096 bytes. The route has a 16 KiB
 request-body cap. Unknown fields, invalid workflow/timestamps, an excessive
 range, or an oversized command return `400 advisor_invalid_request`.
 
-On acceptance, BeaRust snapshots and redacts the relevant data, persists a
+On acceptance, Bearust snapshots and redacts the relevant data, persists a
 queued job, audits `ai_advisor_requested`, emits `ai_advisor.changed`, and
 starts background synchronization. The job has a one-hour expiry. If the
 advisor is disabled it returns `503 advisor_disabled`; provider, timeout,

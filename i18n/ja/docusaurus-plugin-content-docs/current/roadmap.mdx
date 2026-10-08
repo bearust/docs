@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Roadmap
 
-This page lists functionality the BeaRust project has scoped or discussed but has **not** shipped in the documented source boundary. Nothing on this page is available today. Do not configure, script, or operate against anything listed here; see [Feature status](./introduction/feature-status) for what is actually available now.
+This page lists functionality the Bearust project has scoped or discussed but has **not** shipped in the documented source boundary. Nothing on this page is available today. Do not configure, script, or operate against anything listed here; see [Feature status](./introduction/feature-status) for what is actually available now.
 
 Every item below is planned but not yet shipped — deferred, future work, or intentionally out of scope for the current release.
 
@@ -50,9 +50,9 @@ Every item below is planned but not yet shipped — deferred, future work, or in
 
 ## Protocol and networking
 
-- **Upstream HTTP/3.** BeaRust's HTTP/3 listener accepts client connections over QUIC and forwards every request to backends over HTTP/1.1/HTTP/2, unconditionally. Forwarding to backends over HTTP/3 was investigated and is a deliberate, permanent non-goal (an unstable `reqwest` feature flag and a conflicting TLS-backend requirement), not a deferred increment.
+- **Upstream HTTP/3.** Bearust's HTTP/3 listener accepts client connections over QUIC and forwards every request to backends over HTTP/1.1/HTTP/2, unconditionally. Forwarding to backends over HTTP/3 was investigated and is a deliberate, permanent non-goal (an unstable `reqwest` feature flag and a conflicting TLS-backend requirement), not a deferred increment.
 - **Non-HTTP protocol proxying** (raw TCP/UDP) beyond WebSocket passthrough.
-- **A global CDN or edge-caching network.** BeaRust is a near-origin proxy, not a CDN replacement.
+- **A global CDN or edge-caching network.** Bearust is a near-origin proxy, not a CDN replacement.
 - **A native mobile management application.** The management surface is the responsive web GUI only.
 
 ## Localization

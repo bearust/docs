@@ -4,14 +4,14 @@ sidebar_position: 10
 
 # High availability and clustering
 
-Clustering is optional. With no configured peers, BeaRust operates as a standalone node; cluster status
+Clustering is optional. With no configured peers, Bearust operates as a standalone node; cluster status
 reports clustering as disabled and standalone configuration does not require peer credentials. Configure
 peers only when you are deliberately operating a Raft-backed control-plane cluster.
 
 ## What Raft actually does here
 
 Raft is a consensus algorithm: a way for multiple independent nodes to agree on one shared sequence of
-changes, even if some nodes are slow, restarting, or briefly unreachable. BeaRust uses Raft (via the
+changes, even if some nodes are slow, restarting, or briefly unreachable. Bearust uses Raft (via the
 `openraft` library) to replicate **control-plane configuration** — routes, upstream pools, security policy,
 and other administrative state — across every node in a cluster, not to replicate live request traffic
 itself. Each node still serves its own data-plane traffic independently; clustering keeps their
@@ -60,12 +60,12 @@ control-plane configuration changes flow through the leader and get replicated (
   depend on wall-clock time, but large clock skew makes timeouts and logs harder to reason about during an
   incident.
 - **A firewall that restricts the cluster port to the private network.** The shared token authenticates the
-  BeaRust peer protocol; it does not design your network perimeter for you.
+  Bearust peer protocol; it does not design your network perimeter for you.
 
 ## Configure each node deliberately
 
 Give every node a unique `NODE_ID`. Configure `CLUSTER_PEERS` per node: list the *other* cluster members,
-never the local `NODE_ID`. BeaRust rejects a peer entry whose ID matches the local node ID. Use one shared,
+never the local `NODE_ID`. Bearust rejects a peer entry whose ID matches the local node ID. Use one shared,
 high-entropy `CLUSTER_AUTH_TOKEN` for the peer transport. Environment values override the corresponding
 cluster configuration values. Keep the token in a secret manager or deployment-secret mechanism; never
 commit or paste a real token into configuration examples.
@@ -91,7 +91,7 @@ CLUSTER_PEERS='node-a=10.0.0.11:7000,node-b=10.0.0.12:7000'
 CLUSTER_AUTH_TOKEN='<cluster-shared-secret>'
 ```
 
-Peer RPC transport authenticates messages with the configured cluster token. This authenticates the BeaRust
+Peer RPC transport authenticates messages with the configured cluster token. This authenticates the Bearust
 peer protocol; it does not design your network perimeter for you. Restrict the cluster listener to the
 private network, firewall it from untrusted clients, rotate the shared token through a coordinated
 deployment, and protect the token as a cluster-wide credential.
@@ -132,9 +132,9 @@ it with the original command ID, and confirm the intended change appears once af
 ## Keep virtual IP failover separate
 
 Keepalived, VRRP, floating IPs, and load-balancer health checks are host-level availability mechanisms.
-BeaRust does not configure or operate keepalived for you. Use your platform's host/network runbook to move
+Bearust does not configure or operate keepalived for you. Use your platform's host/network runbook to move
 client ingress between healthy nodes, and separately validate that the selected node has the cluster
 readiness required for control-plane writes.
 
 **Verify:** fail over a test virtual IP using the host-level tooling, confirm clients reach the replacement
-node, and separately inspect its BeaRust cluster status before performing a replicated configuration change.
+node, and separately inspect its Bearust cluster status before performing a replicated configuration change.

@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # TLS and certificates
 
-Native TLS is optional. Enable it only when both the certificate chain and private key are present and readable by the BeaRust process.
+Native TLS is optional. Enable it only when both the certificate chain and private key are present and readable by the Bearust process.
 
 ## Configure mounted certificate files
 
@@ -18,7 +18,7 @@ key_path = "/etc/bearust/tls/privkey.pem"
 
 For a non-root container, the process user must be able to read both files and traverse their parent directories. Keep the private key non-world-readable; use group ownership or a narrowly scoped read permission instead of running the container as root. Never commit PEM files or private keys to the repository.
 
-**Verify:** start or reload BeaRust with the mounted paths. A TLS handshake to the listener should succeed and present the expected certificate; a missing, unreadable, malformed, mismatched, or expired certificate is rejected before BeaRust begins serving it.
+**Verify:** start or reload Bearust with the mounted paths. A TLS handshake to the listener should succeed and present the expected certificate; a missing, unreadable, malformed, mismatched, or expired certificate is rejected before Bearust begins serving it.
 
 ## Upload and activate managed certificates
 

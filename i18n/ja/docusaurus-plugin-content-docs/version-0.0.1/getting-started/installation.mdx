@@ -2,9 +2,9 @@
 sidebar_position: 1
 ---
 
-# BeaRust をインストールする
+# Bearust をインストールする
 
-BeaRust は `rizalord/bearust` という単一の Docker イメージとして Docker Hub に公開されています。実行す
+Bearust は `ghcr.io/bearust/bearust` という単一の Docker イメージとして GitHub Container Registry (GHCR) に公開されています。実行す
 るためにソースリポジトリをクローンする必要はありません — このページのクイックスタートでは、自分でファイル
 を2つ作成するだけで、公開済みイメージからスタックを起動します。もう一方のセクションでは、コントリビュー
 ターやイメージをローカルでビルドしたい人向けに、ソースチェックアウトからのビルド方法を扱います。
@@ -30,7 +30,7 @@ mkdir bearust && cd bearust
 ```yaml title="docker-compose.yml"
 services:
   bearust:
-    image: rizalord/bearust:latest
+    image: ghcr.io/bearust/bearust:latest
     command: ["serve", "--config", "/etc/bearust/bearust.toml", "--json-logs"]
     ports:
       - "8080:8080"
@@ -67,7 +67,7 @@ volumes:
 
 ### 3. 最小構成の `bearust.toml` を書く
 
-これはまだルートが1つも設定されていない状態で BeaRust を起動します — 起動、セットアップ API への到達、
+これはまだルートが1つも設定されていない状態で Bearust を起動します — 起動、セットアップ API への到達、
 ヘルスの確認には十分です。転送先のバックエンドができたら、アップストリームプールとルートを追加してくだ
 さい([最初のプロキシを設定する](./first-proxy) を参照)。
 
@@ -104,7 +104,7 @@ Compose のチェックが含まれます。
 
 ## セットアップトークン
 
-SQLite バックエンドでの初回起動時、BeaRust はワンタイムのセットアップトークンを生成し、所有者のみが読め
+SQLite バックエンドでの初回起動時、Bearust はワンタイムのセットアップトークンを生成し、所有者のみが読め
 る権限で永続データ領域に書き込みます。信頼できるホスト上で、チケットやチャット、シェル履歴にコピーせず
 に、実行中のコンテナから取得してください:
 
@@ -152,19 +152,19 @@ DATABASE_URL=postgres://bearust:<postgresのパスワード>@postgres:5432/bearu
 ```
 
 ドキュメントや自動化には実際のパスワードではなく、資格情報の形をしたプレースホルダーを使用してくださ
-い。Compose は選択したデータベースのヘルスチェックを待ち、BeaRust は起動時にマイグレーションを実行しま
+い。Compose は選択したデータベースのヘルスチェックを待ち、Bearust は起動時にマイグレーションを実行しま
 す。SQLite から PostgreSQL への切り替えはインプレースの変更ではありません: 明示的なエクスポート/インポ
 ートを実施・検証し、古い `bearust-data` ボリュームをロールバック用のコピーとして**新しいデプロイが検証
 されるまで削除しないでください**。
 
 ## ソースチェックアウトからビルドする
 
-BeaRust に貢献している場合や、`rizalord/bearust` を pull する代わりに自分でイメージをビルドしたい場合
+Bearust に貢献している場合や、`ghcr.io/bearust/bearust` を pull する代わりに自分でイメージをビルドしたい場合
 は、ソースリポジトリをクローンし、ローカルビルドや追加プロファイルに対応した同梱の Compose ファイルを
 使用してください:
 
 ```sh
-git clone https://github.com/rizalord/bearust.git
+git clone https://github.com/bearust/bearust.git
 cd bearust
 cp .env.example .env
 docker compose up -d --build
@@ -172,7 +172,7 @@ docker compose up -d --build
 
 これは自分で書いたファイルではなく、チェックアウト内の `config/bearust.example.toml` を使用し、上記と
 同じ PostgreSQL/MySQL プロファイルを `docker compose --profile postgres up -d --build` でサポートしま
-す。BeaRust 自体を変更する予定がある場合は
+す。Bearust 自体を変更する予定がある場合は
 [コントリビューター向け開発環境セットアップ](../contributing/development-setup) を参照してください。
 
 次に、[最初の管理者を初期化](./first-time-setup) してください。

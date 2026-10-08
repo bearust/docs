@@ -4,7 +4,7 @@ sidebar_position: 8
 
 # Analytics and observability
 
-Use analytics to observe traffic and security trends, not as an unbounded forensic archive. BeaRust collects request status classes, latency histograms, bandwidth, WAF blocks, bot blocks/challenges, and rate-limit events. It also records dimensions for endpoints, upstreams, attacker IPs, and attack types.
+Use analytics to observe traffic and security trends, not as an unbounded forensic archive. Bearust collects request status classes, latency histograms, bandwidth, WAF blocks, bot blocks/challenges, and rate-limit events. It also records dimensions for endpoints, upstreams, attacker IPs, and attack types.
 
 ## Establish a baseline before acting
 
@@ -16,7 +16,7 @@ When an anomaly needs acknowledgement, record the investigation and resolution t
 
 ## Correlate logs and live events
 
-Use JSON logs for machine parsing and carry the request ID through incident investigation. BeaRust validates or generates request IDs so a client-supplied unsafe value is not blindly trusted. Realtime events notify connected management clients of relevant changes and traffic updates; they complement logs and persisted summaries rather than replacing them.
+Use JSON logs for machine parsing and carry the request ID through incident investigation. Bearust validates or generates request IDs so a client-supplied unsafe value is not blindly trusted. Realtime events notify connected management clients of relevant changes and traffic updates; they complement logs and persisted summaries rather than replacing them.
 
 **Verify:** make a test request with a valid request ID, locate the same ID in JSON logs, and compare the corresponding status/latency with the analytics record. Repeat with an invalid request-ID value and confirm the logged identifier is safe and bounded.
 
@@ -26,4 +26,4 @@ Prometheus export is disabled by default. Its default listener is `127.0.0.1:909
 
 Do not claim a bundled dashboard, long-term metrics retention, or alerting integration that you have not deployed. Keep the metrics listener private or behind an authenticated monitoring path.
 
-**Verify:** enable the exporter on loopback with authentication, query it from the local monitoring agent, and confirm complete Prometheus exposition lines. Attempt an unsafe external/no-auth configuration during validation; BeaRust should reject it rather than starting that listener.
+**Verify:** enable the exporter on loopback with authentication, query it from the local monitoring agent, and confirm complete Prometheus exposition lines. Attempt an unsafe external/no-auth configuration during validation; Bearust should reject it rather than starting that listener.

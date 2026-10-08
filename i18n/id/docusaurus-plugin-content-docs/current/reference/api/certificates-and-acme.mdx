@@ -104,13 +104,13 @@ curl --fail-with-body -k -b "$cookie_jar" \
 }
 ```
 
-`environment` is exactly `staging` or `production`. BeaRust selects the
+`environment` is exactly `staging` or `production`. Bearust selects the
 corresponding Let's Encrypt directory and keeps account keys namespaced by
 environment; use `staging` to test an integration and switch intentionally to
 `production` for a trusted hostname. `challenge` is exactly `http01` or
 `cloudflare_dns01`.
 
-For `http01`, BeaRust serves the HTTP-01 value only at the exact
+For `http01`, Bearust serves the HTTP-01 value only at the exact
 `/.well-known/acme-challenge/{token}` path. Wildcard hostnames are rejected
 with `400 unsupported_challenge`. For `cloudflare_dns01`, send a
 `cloudflare_token`; `cloudflare_api_token` is accepted as an input alias for

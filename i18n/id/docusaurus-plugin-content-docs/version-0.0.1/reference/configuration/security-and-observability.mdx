@@ -8,7 +8,7 @@ sidebar_position: 4
 
 `server.trusted_proxy_cidrs` is the native trust boundary for client identity:
 only direct peers within these CIDRs may supply forwarding headers used by the
-proxy. Keep it empty unless a trusted ingress is in front of BeaRust.
+proxy. Keep it empty unless a trusted ingress is in front of Bearust.
 
 `[rate_limit]` configures the native default policy:
 
@@ -36,7 +36,7 @@ max_output_bytes = 262144
 ```
 
 If the Prometheus bind equals `server.control_bind`, `/metrics` is mounted on
-the control listener. Otherwise, BeaRust starts a dedicated listener exposing
+the control listener. Otherwise, Bearust starts a dedicated listener exposing
 only `/metrics`, not the control-plane UI or API. See [metrics and errors](../metrics-and-errors).
 
 ## Database-backed policies
@@ -55,4 +55,4 @@ filter and defaults to `info` when absent. Request completion events include
 `event = "request_complete"`, `request_id`, `method`, `path`, `route`,
 `upstream`, `status`, `latency_ms`, and `error_category`. An incoming request
 ID is accepted only when it is non-empty, at most 128 bytes, UTF-8, and uses
-letters, digits, `-`, `:`, `_`, or `.`; otherwise BeaRust generates a safe ID.
+letters, digits, `-`, `:`, `_`, or `.`; otherwise Bearust generates a safe ID.

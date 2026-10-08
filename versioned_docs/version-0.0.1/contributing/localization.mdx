@@ -4,7 +4,7 @@ sidebar_position: 10
 
 # Localization
 
-The dashboard currently supports the UI locale IDs **`en`**, **`id`**, and **`ja`**. English is the source/fallback catalog; catalogs live at [`frontend/src/locales/en.json`](https://github.com/rizalord/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/frontend/src/locales/en.json), `id.json`, and `ja.json`. This documentation site is English-first and currently activates **only `en`** in its Docusaurus configuration. Do not imply that the docs site currently serves Indonesian or Japanese just because the product UI does.
+The dashboard currently supports the UI locale IDs **`en`**, **`id`**, and **`ja`**. English is the source/fallback catalog; catalogs live at [`frontend/src/locales/en.json`](https://github.com/bearust/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/frontend/src/locales/en.json), `id.json`, and `ja.json`. This documentation site is English-first and currently activates **only `en`** in its Docusaurus configuration. Do not imply that the docs site currently serves Indonesian or Japanese just because the product UI does.
 
 For a dashboard string, add the English key and matching `id`/`ja` translations, preserving interpolation names such as `{{count}}`. Run:
 
@@ -14,9 +14,9 @@ npm test --prefix frontend
 npm run build --prefix frontend
 ```
 
-[`validate-locales.mjs`](https://github.com/rizalord/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/frontend/scripts/validate-locales.mjs) rejects missing/extra keys and interpolation mismatches. `i18n.ts` normalizes a locale to the supported English-first IDs, resolves account preference before local storage and browser preferences, and uses `en-US`, `id-ID`, and `ja-JP` through `Intl` for dates/numbers. Use its formatter helpers instead of embedding locale-specific number/date formatting in a component.
+[`validate-locales.mjs`](https://github.com/bearust/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/frontend/scripts/validate-locales.mjs) rejects missing/extra keys and interpolation mismatches. `i18n.ts` normalizes a locale to the supported English-first IDs, resolves account preference before local storage and browser preferences, and uses `en-US`, `id-ID`, and `ja-JP` through `Intl` for dates/numbers. Use its formatter helpers instead of embedding locale-specific number/date formatting in a component.
 
 To add a UI locale, add its exact ID to `Locale`, `SUPPORTED_LOCALES`, resources, and the validation script’s allowlist; add a full JSON catalog; update selection/formatting tests; then run the commands above. To activate another documentation locale, add its translated Docusaurus content and configuration only when it is sufficiently complete for a coherent user experience. Keep document IDs English-first and locale-neutral so translations retain stable links.
 
-See the source [localization guide](https://github.com/rizalord/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/docs/localization.md) and `tests/control_plane_locale.rs` for the persisted account-preference boundary.
+See the source [localization guide](https://github.com/bearust/bearust/blob/c8ed147cd84efc71bda8b8473486906b5616a505/docs/localization.md) and `tests/control_plane_locale.rs` for the persisted account-preference boundary.
 

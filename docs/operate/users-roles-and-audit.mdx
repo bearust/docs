@@ -22,7 +22,7 @@ Create a custom role when those bundles are too broad. Assign only the permissio
 
 ## Protect administrator access and sessions
 
-Keep at least two enabled administrator accounts under separate, controlled ownership. BeaRust prevents an operation that would leave no enabled administrator, so disabling, deleting, or demoting the last enabled admin is rejected. This safeguard does not replace recovery planning: retain an approved process for recovering administrator access.
+Keep at least two enabled administrator accounts under separate, controlled ownership. Bearust prevents an operation that would leave no enabled administrator, so disabling, deleting, or demoting the last enabled admin is rejected. This safeguard does not replace recovery planning: retain an approved process for recovering administrator access.
 
 Disabled users cannot continue using an existing session. When a user is disabled or a session is revoked, confirm that their next authenticated control-plane request is rejected. Session cookies are `HttpOnly`, `Secure`, and `SameSite=Lax`; do not copy them into tickets, shell history, or documentation. Passwords are stored as password hashes, and audit records deliberately exclude passwords, session tokens, request bodies, and other secrets.
 

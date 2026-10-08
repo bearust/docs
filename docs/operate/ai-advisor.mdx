@@ -8,7 +8,7 @@ AI Advisor is optional. When its provider configuration is absent or invalid, th
 
 ## Configure an OpenAI-compatible provider
 
-Set `LLM_API_URL` and `LLM_API_KEY` to enable the provider. `LLM_MODEL` is optional. The endpoint must be OpenAI-compatible with the chat-completions request/response shape; BeaRust normalizes a configured base URL to its `/v1/chat/completions` endpoint.
+Set `LLM_API_URL` and `LLM_API_KEY` to enable the provider. `LLM_MODEL` is optional. The endpoint must be OpenAI-compatible with the chat-completions request/response shape; Bearust normalizes a configured base URL to its `/v1/chat/completions` endpoint.
 
 ```sh
 LLM_API_URL='https://llm.example.test'
@@ -16,9 +16,9 @@ LLM_API_KEY='<provider-api-key>'
 LLM_MODEL='approved-model-name'
 ```
 
-Do not put a real key in a configuration file, shell history, ticket, or generated documentation. Provide it through your deployment's secret mechanism. The provider configuration redacts the key from diagnostic output. Before it constructs the provider request body, BeaRust applies its default redactor to advisor message content; this is the supported request-content redaction boundary, not a guarantee that every sensitive value has been removed. The configured `LLM_API_KEY` is intentionally sent to the configured provider as a Bearer authorization credential. Redaction reduces exposure; it is not permission to send data your organization is not allowed to process. Review your provider, retention, residency, and network-egress requirements before enabling the feature.
+Do not put a real key in a configuration file, shell history, ticket, or generated documentation. Provide it through your deployment's secret mechanism. The provider configuration redacts the key from diagnostic output. Before it constructs the provider request body, Bearust applies its default redactor to advisor message content; this is the supported request-content redaction boundary, not a guarantee that every sensitive value has been removed. The configured `LLM_API_KEY` is intentionally sent to the configured provider as a Bearer authorization credential. Redaction reduces exposure; it is not permission to send data your organization is not allowed to process. Review your provider, retention, residency, and network-egress requirements before enabling the feature.
 
-Optional controls bound behavior: `LLM_REQUEST_TIMEOUT_SECONDS`, `LLM_RESPONSE_LIMIT_BYTES`, `LLM_QUEUE_CAPACITY`, `LLM_WORKER_COUNT`, and `LLM_CIRCUIT_FAILURE_THRESHOLD`. The queue and worker concurrency are bounded, requests time out, response sizes are limited, and the circuit opens after configured provider failures before cooling down. These controls protect BeaRust resources; they do not guarantee provider availability or response quality.
+Optional controls bound behavior: `LLM_REQUEST_TIMEOUT_SECONDS`, `LLM_RESPONSE_LIMIT_BYTES`, `LLM_QUEUE_CAPACITY`, `LLM_WORKER_COUNT`, and `LLM_CIRCUIT_FAILURE_THRESHOLD`. The queue and worker concurrency are bounded, requests time out, response sizes are limited, and the circuit opens after configured provider failures before cooling down. These controls protect Bearust resources; they do not guarantee provider availability or response quality.
 
 **Verify:** deploy a test-only key, check that advisor status is enabled, submit a harmless request, and inspect logs/diagnostics to confirm the key is redacted. Temporarily point a test deployment at an unreachable provider and confirm the job fails with an advisor error while a normal proxied request still completes.
 

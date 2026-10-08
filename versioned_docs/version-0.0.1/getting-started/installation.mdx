@@ -2,9 +2,9 @@
 sidebar_position: 1
 ---
 
-# Install BeaRust
+# Install Bearust
 
-BeaRust ships as a single Docker image, `rizalord/bearust`, published to Docker Hub. You do not need to
+Bearust ships as a single Docker image, `ghcr.io/bearust/bearust`, published to GitHub Container Registry (GHCR). You do not need to
 clone the source repository to run it — this page's quick start creates just two files yourself and starts
 the stack from the published image. A second section covers building from a source checkout instead, for
 contributors or anyone who wants to build the image locally.
@@ -30,7 +30,7 @@ This is the production-oriented stack: the data plane on `8080`, the control API
 ```yaml title="docker-compose.yml"
 services:
   bearust:
-    image: rizalord/bearust:latest
+    image: ghcr.io/bearust/bearust:latest
     command: ["serve", "--config", "/etc/bearust/bearust.toml", "--json-logs"]
     ports:
       - "8080:8080"
@@ -67,7 +67,7 @@ volumes:
 
 ### 3. Write a minimal `bearust.toml`
 
-This starts BeaRust with no routes configured yet — enough to boot, reach the setup API, and verify health.
+This starts Bearust with no routes configured yet — enough to boot, reach the setup API, and verify health.
 Add upstream pools and routes once you have a backend to point at (see
 [Configure your first proxy](./first-proxy)).
 
@@ -103,7 +103,7 @@ Continue to [first-time setup](./first-time-setup) to create the first administr
 
 ## Bootstrap token
 
-On the first SQLite-backed start, BeaRust generates a one-time setup token and writes it to the persistent
+On the first SQLite-backed start, Bearust generates a one-time setup token and writes it to the persistent
 data area with owner-only permissions. On a trusted host, retrieve it from the running container without
 copying it into tickets, chat, or shell history:
 
@@ -151,18 +151,18 @@ DATABASE_URL=postgres://bearust:<postgres-password>@postgres:5432/bearust
 ```
 
 Use a credential-shaped placeholder in documentation and automation, never a real password. Compose waits
-for the selected database's health check, and BeaRust runs migrations at startup. Switching from SQLite to
+for the selected database's health check, and Bearust runs migrations at startup. Switching from SQLite to
 PostgreSQL is not an in-place change: perform and test an explicit export/import, retain the old
 `bearust-data` volume as a rollback copy, and **do not delete it** until the new deployment is verified.
 
 ## Building from a source checkout instead
 
-If you are contributing to BeaRust or want to build the image yourself rather than pull
-`rizalord/bearust`, clone the source repository and use its bundled Compose file, which supports building
+If you are contributing to Bearust or want to build the image yourself rather than pull
+`ghcr.io/bearust/bearust`, clone the source repository and use its bundled Compose file, which supports building
 locally and additional profiles:
 
 ```sh
-git clone https://github.com/rizalord/bearust.git
+git clone https://github.com/bearust/bearust.git
 cd bearust
 cp .env.example .env
 docker compose up -d --build
@@ -170,6 +170,6 @@ docker compose up -d --build
 
 This uses `config/bearust.example.toml` from the checkout instead of a hand-written file, and supports the
 same PostgreSQL/MySQL profiles described above via `docker compose --profile postgres up -d --build`. See
-[contributor development setup](../contributing/development-setup) if you plan to modify BeaRust itself.
+[contributor development setup](../contributing/development-setup) if you plan to modify Bearust itself.
 
 Next, [initialize the first administrator](./first-time-setup).

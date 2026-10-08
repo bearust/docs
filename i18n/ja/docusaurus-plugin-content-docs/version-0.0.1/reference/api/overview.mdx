@@ -6,8 +6,8 @@ sidebar_position: 1
 # Control-plane API overview
 
 This is the hand-maintained reference for the control-plane routes currently
-registered by BeaRust. It describes the implemented HTTP contract; it is not
-an OpenAPI document and BeaRust does not generate a schema from these pages.
+registered by Bearust. It describes the implemented HTTP contract; it is not
+an OpenAPI document and Bearust does not generate a schema from these pages.
 
 ## Base URL and JSON
 
@@ -38,7 +38,7 @@ Cloudflare token.
 
 ## Sessions and CSRF
 
-BeaRust uses cookie sessions, not bearer tokens. Successful setup initialization
+Bearust uses cookie sessions, not bearer tokens. Successful setup initialization
 and login set two one-day cookies:
 
 - `bearust_session` is `HttpOnly`, `Secure`, `SameSite=Lax`, and authenticates

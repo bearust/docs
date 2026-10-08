@@ -12,13 +12,13 @@ When `[prometheus].enabled` is false, `/metrics` returns `404`. When
 `text/plain; version=0.0.4`.
 
 If `prometheus.bind` equals `server.control_bind`, `/metrics` is available on
-the control listener. With a different bind, BeaRust starts a dedicated
+the control listener. With a different bind, Bearust starts a dedicated
 listener whose router contains only `/metrics`; it does not expose the rest of
 the control plane. `internal_only = true` requires a loopback bind. An external
 metrics listener must set `require_auth = true`.
 
 The response is capped by `max_output_bytes` (default 256 KiB; maximum 4 MiB).
-BeaRust truncates only at complete exposition lines, never in the middle of a
+Bearust truncates only at complete exposition lines, never in the middle of a
 sample. Analytics include `bearust_requests_total` (with `proxy_host_id` and
 `status_class`), `bearust_bandwidth_bytes_total`,
 `bearust_request_duration_ms`, `bearust_security_events_total`, and

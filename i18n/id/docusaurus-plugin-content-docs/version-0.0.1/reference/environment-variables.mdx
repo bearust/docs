@@ -29,13 +29,13 @@ It maps the control port only to `127.0.0.1` on the host.
 
 | Variable | Use |
 | --- | --- |
-| `BEARUST_SETUP_TOKEN` | Optional first-start setup token. If absent, BeaRust generates one and, for a file-backed SQLite database, writes a `setup-token` file beside it with Unix mode `0600`. |
+| `BEARUST_SETUP_TOKEN` | Optional first-start setup token. If absent, Bearust generates one and, for a file-backed SQLite database, writes a `setup-token` file beside it with Unix mode `0600`. |
 | `DATABASE_URL` | Selects the control-plane database. Empty/unset uses `server.control_database`; Compose defaults to `sqlite:///data/bearust.sqlite`. SQLite, PostgreSQL, and MySQL URLs are supported by the Compose setup. |
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | PostgreSQL profile provisioning values. |
 | `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_ROOT_PASSWORD` | MySQL profile provisioning values. |
 
 Use the `postgres` or `mysql` Compose profile only with the corresponding
-`DATABASE_URL`. BeaRust provisions the file-backed SQLite path when needed and
+`DATABASE_URL`. Bearust provisions the file-backed SQLite path when needed and
 runs control-plane migrations at startup. Use non-secret placeholders such as
 `replace-with-a-development-password` in local copies; deployment credentials
 belong in a secret mechanism.

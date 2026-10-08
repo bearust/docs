@@ -4,13 +4,13 @@ sidebar_position: 11
 
 # Documentation workflow
 
-Treat source as the authority and publish only claims verified against a source commit. These guides were checked against [`rizalord/bearust@c8ed147`](https://github.com/rizalord/bearust/tree/c8ed147cd84efc71bda8b8473486906b5616a505). When changing a behavior, start at its owning file and closest test, verify the current commit, and update the matching operator/reference/contributor page in the same change.
+Treat source as the authority and publish only claims verified against a source commit. These guides were checked against [`bearust/bearust@c8ed147`](https://github.com/bearust/bearust/tree/c8ed147cd84efc71bda8b8473486906b5616a505). When changing a behavior, start at its owning file and closest test, verify the current commit, and update the matching operator/reference/contributor page in the same change.
 
 ## Verification boundary
 
 The complete public docs corpus (API reference, configuration/CLI reference,
 operate guides, and contributor pages) was last audited end-to-end against
-`rizalord/bearust` commit [`c8ed147`](https://github.com/rizalord/bearust/tree/c8ed147cd84efc71bda8b8473486906b5616a505)
+`bearust/bearust` commit [`c8ed147`](https://github.com/bearust/bearust/tree/c8ed147cd84efc71bda8b8473486906b5616a505)
 (full SHA `c8ed147cd84efc71bda8b8473486906b5616a505`) on 2026-08-17. Do not
 describe behavior from a later `bearust` commit as already implemented; add
 any such change to [the roadmap](../roadmap.mdx) instead until the docs are
@@ -37,7 +37,7 @@ git diff --check
 
 `npm run validate:docs` checks the public `docs/` corpus for starter content,
 unfinished-content markers, required pages, and route coverage against the
-sibling BeaRust source repository's control-plane router. Set
+sibling Bearust source repository's control-plane router. Set
 `BEARUST_SOURCE_DIR` if that repository is not a sibling of this checkout
 (for example, when running from a nested worktree). Then review links, source
 pointers, locale claims, commands, and any changed sidebar IDs.

@@ -29,7 +29,7 @@ the `bearust` service.
 
 For a new development data volume, the stack supplies `bearust-dev-setup` as `BEARUST_SETUP_TOKEN` unless you override it. The frontend setup page pre-fills that development-only value. Do not reuse it in production; configure a long random value in an untracked `.env` instead.
 
-Changes to Rust and frontend files are reflected through the backend watch workflow and Vite hot module reload. The Compose stack uses isolated named development volumes for BeaRust data and TLS state, Cargo caches and build output, plus frontend `node_modules` and npm cache.
+Changes to Rust and frontend files are reflected through the backend watch workflow and Vite hot module reload. The Compose stack uses isolated named development volumes for Bearust data and TLS state, Cargo caches and build output, plus frontend `node_modules` and npm cache.
 
 Stop the stack while retaining development state:
 

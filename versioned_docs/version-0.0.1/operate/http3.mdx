@@ -16,7 +16,7 @@ enabled = true
 bind = "0.0.0.0:8443"
 ```
 
-The HTTP/3 listener uses UDP and the same certificate/key files as native TLS. Permit its UDP port through the host and network firewalls. BeaRust advertises the configured HTTP/3 endpoint with `Alt-Svc` on HTTP/1.1 and HTTP/2 responses so compatible clients can upgrade.
+The HTTP/3 listener uses UDP and the same certificate/key files as native TLS. Permit its UDP port through the host and network firewalls. Bearust advertises the configured HTTP/3 endpoint with `Alt-Svc` on HTTP/1.1 and HTTP/2 responses so compatible clients can upgrade.
 
 **Verify:** make an HTTPS request through the TCP listener and inspect `Alt-Svc`, then use an HTTP/3-capable client against the UDP listener. The client should negotiate HTTP/3 and receive the same route response.
 
@@ -24,6 +24,6 @@ The HTTP/3 listener uses UDP and the same certificate/key files as native TLS. P
 
 HTTP/3 uses the same host/path routing, WAF, IP security, bot protection, rate limiting, analytics, and plugin decision path as the TCP listener. It preserves the data-plane protection model rather than creating a bypass around it.
 
-The upstream boundary is deliberate: BeaRust forwards HTTP/3 client requests to upstreams over HTTP/1.1 or HTTP/2. It does not provide upstream HTTP/3. Plan backend compatibility and timeouts for those upstream protocols.
+The upstream boundary is deliberate: Bearust forwards HTTP/3 client requests to upstreams over HTTP/1.1 or HTTP/2. It does not provide upstream HTTP/3. Plan backend compatibility and timeouts for those upstream protocols.
 
 **Verify:** apply a harmless monitor-mode security rule and a test route, then compare the HTTP/3 response, access/security telemetry, and analytics event with the equivalent HTTP/2 request. Both should identify the same host and path; the upstream connection will not be HTTP/3.
